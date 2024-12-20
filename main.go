@@ -10,6 +10,7 @@ func getEmployee(c echo.Context) error{
 	return c.String(http.StatusOK,"List of all employees")
 }
 
+
 func main() {
 	e := echo.New()
 
