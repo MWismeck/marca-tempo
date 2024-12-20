@@ -20,39 +20,39 @@ The backend API provides the following routes for interacting with the employee 
 
 ### **Employers**
 
-### **1. List all employers**
+### **1. List all employee**
 
-**Route:** `GET /employers`
+**Route:** `GET /employee`
 
 **Description:** Retrieves a list of all registered employees.
 
-### **2. Create a new employer**
+### **2. Create a new employee**
 
-**Route:** `POST /employers`
+**Route:** `POST /employee`
 
 **Description:** Adds a new employee to the system.
 
 ### **3. Get information about a specific employer**
 
-**Route:** `GET /employers/:id`
+**Route:** `GET /employee/:id`
 
 **Description:** Retrieves information about a specific employee by ID.
 
 ### **4. Update an employer's information**
 
-**Route:** `PUT /employers/:id`
+**Route:** `PUT /employee/:id`
 
 **Description:** Updates the details of a specific employee by ID.
 
-### **5. Delete an employer**
+### **5. Delete an employee**
 
-**Route:** `DELETE /employers/:id`
+**Route:** `DELETE /employee/:id`
 
 **Description:** Removes an employee from the system by ID.
 
 ## **Data Structure**
 
-The **Employer** entity follows the structure below:
+The **Employee** entity follows the structure below:
 
 | **Field** | **Type** | **Description** |
 | --- | --- | --- |
