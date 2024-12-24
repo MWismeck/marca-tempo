@@ -7,6 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type EmployeeHandler struct{
+	DB *gorm.DB
+}
+
+
 type Employee struct{
 	gorm.Model
 	
@@ -28,23 +33,24 @@ type Employee struct{
 		db.AutoMigrate(&Employee{})
 		return db
 	}
+
+	func NewEmployeeHandler(db *gorm.DB) *EmployeeHandler{
+		return &EmployeeHandler{DB : db}
+	}
 	
 
-	func AddEmplEmployee(employee Employee) error {
-		db := Init()
-		
-		if result := db.Create(&employee); result.Error != nil{
+	func(e *EmployeeHandler) AddEmplEmployee(employee Employee) error {
+		if result := e.DB.Create(&employee); result.Error != nil{
 			return result.Error
 		}
 		fmt.Println("Create employee !")
 		return nil
 	}
 
-	func GetEmployee ()([]Employee, error){
+	func (e *EmployeeHandler) GetEmployee ()([]Employee, error){
 		employees := []Employee{}
 
-		db := Init()
-		err := db.Find(&employees).Error
+		err := e.DB.Find(&employees).Error
 		return employees, err
 	}
 
