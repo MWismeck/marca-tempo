@@ -8,8 +8,13 @@ import (
 )
 
 func getEmployee(c echo.Context) error{
-	return c.String(http.StatusOK,"List of all employees")
+	employees, err :=db.GetEmployee()
+	if err != nil {
+		return c.String(http.StatusNotFound,"Failed to get employees")
+	}
+	return c.JSON(http.StatusOK, employees)
 }
+
 func createEmployee(c echo.Context)error{
 	employee := db.Employee{}
 	if err := c.Bind(&employee); err != nil{
@@ -20,17 +25,21 @@ func createEmployee(c echo.Context)error{
 	}
 	return c.String(http.StatusOK, "Create employee")
 }
+
 func getEmployeeId(c echo.Context) error{
 	id := c.Param("id")
 	getEmploy := fmt.Sprintf("Get %s employee", id)
 	return c.String(http.StatusOK, getEmploy)
 }
+
 func updateEmployee(c echo.Context) error{
 	return c.String(http.StatusOK,"Update a employee")
 }
+
 func deleteEmployee(c echo.Context) error{
 	return c.String(http.StatusOK,"Delete a employee")
 }
+
 
 func main() {
 	e := echo.New()

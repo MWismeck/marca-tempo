@@ -40,4 +40,12 @@ type Employee struct{
 		return nil
 	}
 
+	func GetEmployee ()([]Employee, error){
+		employees := []Employee{}
+
+		db := Init()
+		err := db.Find(&employees).Error
+		return employees, err
+	}
+
  
