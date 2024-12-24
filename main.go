@@ -11,7 +11,11 @@ func getEmployee(c echo.Context) error{
 	return c.String(http.StatusOK,"List of all employees")
 }
 func createEmployee(c echo.Context)error{
-	db.AddEmplEmployee()
+	employee := db.Employee{}
+	if err := c.Bind(&employee); err != nil{
+		return err
+	}
+	db.AddEmplEmployee(employee)
 	return c.String(http.StatusOK, "Create employee")
 }
 func getEmployeeId(c echo.Context) error{

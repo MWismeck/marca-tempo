@@ -10,14 +10,14 @@ import (
 type Employee struct{
 	gorm.Model
 	
-	Name string
-	CPF int
-	RG int
-	Email string
-	Age int
-	Active bool
-	Workload float32
-	IsManager bool
+	Name string `json:"name"`
+	CPF string  `json:"cpf"`
+	RG string `json:"rg"`
+	Email string `json:"email"`
+	Age int `json:"age"`
+	Active bool `json:"active"`
+	Workload float32 `json:"workload"`
+	IsManager bool `json:"ismanager"`
 } 
 
   func Init() *gorm.DB{
@@ -30,18 +30,9 @@ type Employee struct{
 	}
 	
 
-	func AddEmplEmployee()  {
+	func AddEmplEmployee(employee Employee)  {
 		db := Init()
-		employee := Employee{
-			Name : "José Maria",
-			CPF : 9999999999 ,
-			RG : 000000000 , 
-			Email : "teste@teste.com",
-			Age : 30 ,
-			Active : true ,
-			Workload : 35 ,
-			IsManager : false,
-		}
+		
 		if result := db.Create(&employee); result.Error != nil{
 			fmt.Println("Error to create employee")
 		}
