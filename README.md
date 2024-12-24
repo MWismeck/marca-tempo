@@ -1,8 +1,6 @@
-<<<<<<< HEAD
-# marca-tempo
-=======
+
 # Marca Tempo APP
->>>>>>> 122c74c4fd8ee0eac1a198c772d71bf1ae0b3a22
+
 # Digital Point Marker (Web App) - TCC
 
 ## **Project Overview**
@@ -61,7 +59,6 @@ The **Employee** entity follows the structure below:
 | **Field** | **Type** | **Description** |
 | --- | --- | --- |
 | `name` | `string` | Full name of the employee |
-<<<<<<< HEAD
 | `cpf` | `integer` | Unique CPF number of the employee |
 | `rg` | `integer` | Identity document number (RG) |
 | `email` | `string` | Employee's email address |
@@ -69,15 +66,9 @@ The **Employee** entity follows the structure below:
 | `active` | `boolean` | Whether the employee is active |
 | `workload` | `float32` | Weekly work hours |
 | `IsManager` | `boolean` | Determine the manager to assign the appropriate privileges.
-=======
-| `cpf` | `string` | Unique CPF number of the employee |
-| `rg` | `string` | Identity document number (RG) |
-| `email` | `string` | Employee's email address |
-| `age` | `integer` | Employee's age |
-| `active` | `boolean` | Whether the employee is active |
-| `workload` | `integer` | Weekly work hours |
 
->>>>>>> 122c74c4fd8ee0eac1a198c772d71bf1ae0b3a22
+
+
 ---
 
 ## **Technologies Used**
@@ -108,8 +99,6 @@ The **Employee** entity follows the structure below:
 - **Authentication & Authorization**: Implement user roles (e.g., admin, employee) to restrict access to certain features.
 - **Reports & Analytics**: Generate reports on employee attendance and work hours.
 - **Notifications**: Email or SMS notifications for employees and administrators.
-<<<<<<< HEAD
 - **Export Data**: Allow export of employee records and work hours to CSV or PDF.
-=======
-- **Export Data**: Allow export of employee records and work hours to CSV or PDF.
->>>>>>> 122c74c4fd8ee0eac1a198c772d71bf1ae0b3a22
+
+
