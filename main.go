@@ -15,7 +15,9 @@ func createEmployee(c echo.Context)error{
 	if err := c.Bind(&employee); err != nil{
 		return err
 	}
-	db.AddEmplEmployee(employee)
+	if err := db.AddEmplEmployee(employee); err != nil{
+		return c.String(http.StatusInternalServerError,"Error to create employee")
+	}
 	return c.String(http.StatusOK, "Create employee")
 }
 func getEmployeeId(c echo.Context) error{

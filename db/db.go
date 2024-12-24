@@ -30,13 +30,14 @@ type Employee struct{
 	}
 	
 
-	func AddEmplEmployee(employee Employee)  {
+	func AddEmplEmployee(employee Employee) error {
 		db := Init()
 		
 		if result := db.Create(&employee); result.Error != nil{
-			fmt.Println("Error to create employee")
+			return result.Error
 		}
 		fmt.Println("Create employee !")
+		return nil
 	}
 
  
