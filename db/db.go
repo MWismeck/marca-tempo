@@ -1,8 +1,7 @@
 package db
 
 import (
-	"fmt"
-	"log"
+	"github.com/rs/zerolog/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -28,7 +27,7 @@ type Employee struct{
   func Init() *gorm.DB{
 	db, err := gorm.Open(sqlite.Open("employee.db"), &gorm.Config{})
 		if err != nil{
-			log.Fatal(err)
+			log.Fatal().Err(err).Msgf("Failed to initialize SQLite: %s", err.Error())
 		}
 		db.AutoMigrate(&Employee{})
 		return db
@@ -41,9 +40,10 @@ type Employee struct{
 
 	func(e *EmployeeHandler) AddEmplEmployee(employee Employee) error {
 		if result := e.DB.Create(&employee); result.Error != nil{
+			log.Error().Msg("Failed to create employee")
 			return result.Error
 		}
-		fmt.Println("Create employee !")
+		log.Info().Msg("Create Employee!")
 		return nil
 	}
 
