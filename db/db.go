@@ -61,3 +61,8 @@ type Employee struct{
 		return employee, err.Error
 	}
  
+	func (s *EmployeeHandler) UpdateEmployee (updateEmployee Employee)error{
+		
+		return s.DB.Save(&updateEmployee).Error
+	}
+ 
