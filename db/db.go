@@ -1,9 +1,11 @@
 package db
 
 import (
-	"github.com/rs/zerolog/log"
-	"gorm.io/driver/sqlite"
+	
 	"gorm.io/gorm"
+	"gorm.io/driver/sqlite"
+	"github.com/rs/zerolog/log"
+	"github.com/MWismeck/marca-tempo/schemas"
 	
 )
 
@@ -12,25 +14,14 @@ type EmployeeHandler struct{
 }
 
 
-type Employee struct{
-	gorm.Model
-	
-	Name string `json:"name"`
-	CPF string  `json:"cpf"`
-	RG string `json:"rg"`
-	Email string `json:"email"`
-	Age int `json:"age"`
-	Active bool `json:"active"`
-	Workload float32 `json:"workload"`
-	IsManager bool `json:"ismanager"`
-} 
+
 
   func Init() *gorm.DB{
 	db, err := gorm.Open(sqlite.Open("employee.db"), &gorm.Config{})
 		if err != nil{
 			log.Fatal().Err(err).Msgf("Failed to initialize SQLite: %s", err.Error())
 		}
-		db.AutoMigrate(&Employee{})
+		db.AutoMigrate(&schemas.Employee{})
 		return db
 	}
 
@@ -39,7 +30,7 @@ type Employee struct{
 	}
 	
 
-	func(e *EmployeeHandler) AddEmployee(employee Employee) error {
+	func(e *EmployeeHandler) AddEmployee(employee schemas.Employee) error {
 		if result := e.DB.Create(&employee); result.Error != nil{
 			log.Error().Msg("Failed to create employee")
 			return result.Error
@@ -48,25 +39,25 @@ type Employee struct{
 		return nil
 	}
 
-	func (e *EmployeeHandler) GetEmployees ()([]Employee, error){
-		employees := []Employee{}
+	func (e *EmployeeHandler) GetEmployees ()([]schemas.Employee, error){
+		employees := []schemas.Employee{}
 
 		err := e.DB.Find(&employees).Error
 		return employees, err
 	}
 
-	func (e *EmployeeHandler) GetEmployee (id int)(Employee, error){
-		var employee Employee
+	func (e *EmployeeHandler) GetEmployee (id int)(schemas.Employee, error){
+		var employee schemas.Employee
         err := e.DB.First(&employee, id)
 		return employee, err.Error
 	}
  
-	func (e *EmployeeHandler) UpdateEmployee (updateEmployee Employee)error{
+	func (e *EmployeeHandler) UpdateEmployee (updateEmployee schemas.Employee)error{
 		
 		return e.DB.Save(&updateEmployee).Error
 	}
 
-	func (e *EmployeeHandler) DeleteEmployee (employee Employee)error{
+	func (e *EmployeeHandler) DeleteEmployee (employee schemas.Employee)error{
 		
 		return e.DB.Delete(&employee).Error
 	}

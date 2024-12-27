@@ -3,10 +3,10 @@ package api
 import (
 	"net/http"
 	"strconv"
-	"github.com/MWismeck/marca-tempo/db"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"errors"
+	"github.com/MWismeck/marca-tempo/schemas"
 )
 
 func (api *API) getEmployees(c echo.Context) error{
@@ -18,7 +18,7 @@ func (api *API) getEmployees(c echo.Context) error{
 }
 
 func (api *API) createEmployee(c echo.Context)error{
-	employee := db.Employee{}
+	employee := schemas.Employee{}
 	if err := c.Bind(&employee); err != nil{
 		return err
 	}
@@ -48,7 +48,7 @@ func (api *API) updateEmployee(c echo.Context) error{
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Fail to update employee")
 	}
-    recivedEmployee := db.Employee{}
+    recivedEmployee := schemas.Employee{}
 	if err := c.Bind(&recivedEmployee); err != nil{
 		return err
 	}
@@ -69,7 +69,7 @@ func (api *API) updateEmployee(c echo.Context) error{
 	return c.JSON(http.StatusOK, employee)
 }
 
-func updateEmployeeInfo (recivedEmployee, employee db.Employee)db.Employee{
+func updateEmployeeInfo (recivedEmployee, employee schemas.Employee)schemas.Employee{
 	if recivedEmployee.Name != "" {
 		employee.Name = recivedEmployee.Name
 	}
