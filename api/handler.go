@@ -22,7 +22,7 @@ func (api *API) createEmployee(c echo.Context)error{
 	if err := c.Bind(&employee); err != nil{
 		return err
 	}
-	if err := api.DB.AddEmplEmployee(employee); err != nil{
+	if err := api.DB.AddEmployee(employee); err != nil{
 		return c.String(http.StatusInternalServerError,"Error to create employee")
 	}
 	return c.String(http.StatusOK, "Create employee")
@@ -96,7 +96,21 @@ func updateEmployeeInfo (recivedEmployee, employee db.Employee)db.Employee{
 	return employee
 }
 func (api *API) deleteEmployee(c echo.Context) error{
-	return c.String(http.StatusOK,"Delete a employee")
+	id,err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.String(http.StatusInternalServerError,"Failed to get employee ID")
+	}
+	employee, err := api.DB.GetEmployee(id)
+	if errors.Is(err, gorm.ErrRecordNotFound){
+		return c.String(http.StatusNotFound,"Employee not found")
+	}
+	if err != nil {
+		return c.String(http.StatusInternalServerError,"Failed to get employee")
+	}
+	if err := api.DB.DeleteEmployee(employee); err != nil{
+		return c.String(http.StatusInternalServerError,"Failed to delete employee")
+	}
+	return c.JSON(http.StatusOK, employee)
 }
 
 

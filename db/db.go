@@ -39,7 +39,7 @@ type Employee struct{
 	}
 	
 
-	func(e *EmployeeHandler) AddEmplEmployee(employee Employee) error {
+	func(e *EmployeeHandler) AddEmployee(employee Employee) error {
 		if result := e.DB.Create(&employee); result.Error != nil{
 			log.Error().Msg("Failed to create employee")
 			return result.Error
@@ -61,8 +61,12 @@ type Employee struct{
 		return employee, err.Error
 	}
  
-	func (s *EmployeeHandler) UpdateEmployee (updateEmployee Employee)error{
+	func (e *EmployeeHandler) UpdateEmployee (updateEmployee Employee)error{
 		
-		return s.DB.Save(&updateEmployee).Error
+		return e.DB.Save(&updateEmployee).Error
 	}
- 
+
+	func (e *EmployeeHandler) DeleteEmployee (employee Employee)error{
+		
+		return e.DB.Delete(&employee).Error
+	}
