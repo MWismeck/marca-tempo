@@ -4,6 +4,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	
 )
 
 type EmployeeHandler struct{
@@ -47,11 +48,16 @@ type Employee struct{
 		return nil
 	}
 
-	func (e *EmployeeHandler) GetEmployee ()([]Employee, error){
+	func (e *EmployeeHandler) GetEmployees ()([]Employee, error){
 		employees := []Employee{}
 
 		err := e.DB.Find(&employees).Error
 		return employees, err
 	}
 
+	func (e *EmployeeHandler) GetEmployee (id int)(Employee, error){
+		var employee Employee
+        err := e.DB.First(&employee, id)
+		return employee, err.Error
+	}
  
