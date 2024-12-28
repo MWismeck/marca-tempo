@@ -2,24 +2,57 @@ package api
 
 import (
 	"errors"
-	"net/http"
-	"strconv"
 	"github.com/MWismeck/marca-tempo/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
+	"net/http"
+	"strconv"
+	_ "github.com/MWismeck/marca-tempo/docs"
 )
 
+// getEmployees godoc
+//
+//  @Summary        Get a list of employees
+//  @Desciption     Retrive employees details
+//  @Tags           employees
+//  @Accept         json
+//  @Produce        json
+//  @Param          register path int false  "Registration"
+//  @Sucess         200 {object} schemas.EmployeeResponse
+//  @Failure        404
+//  @Router         /Employees/ [get]
 func (api *API) getEmployees(c echo.Context) error {
 	employees, err := api.DB.GetEmployees()
 	if err != nil {
 		return c.String(http.StatusNotFound, "Failed to get employees")
 	}
+	active := c.QueryParam("active")
+
+	if active != "" {
+		act, err := strconv.ParseBool(active)
+		if err != nil {
+			log.Error().Err(err).Msgf("[api] error to parsing boolean")
+			return c.String(http.StatusInternalServerError, "Failed to parse boolean")
+		}
+		employees, err = api.DB.GetFilteredEmployee(act)
+	}
+
 	listOfEmployees := map[string][]schemas.EmployeeResponse{"employees:": schemas.NewResponse(employees)}
 
 	return c.JSON(http.StatusOK, listOfEmployees)
 }
 
+// createEmployee godoc
+//
+//  @Summary        Create employee
+//  @Desciption     Create employee
+//  @Tags           employees
+//  @Accept         json
+//  @Produce        json
+//  @Sucess         200 {object} schemas.EmployeeResponse
+//  @Failure        400
+//  @Router         /Employees/ [post]
 func (api *API) createEmployee(c echo.Context) error {
 	employeeReq := EmployeeRequest{}
 	if err := c.Bind(&employeeReq); err != nil {
@@ -45,6 +78,16 @@ func (api *API) createEmployee(c echo.Context) error {
 	return c.JSON(http.StatusOK, employee)
 }
 
+// getEmployeeId godoc
+//
+//  @Summary        Get a list of employees
+//  @Desciption     Retrive employee details
+//  @Tags           employees
+//  @Accept         json
+//  @Produce        json
+//  @Sucess         200 {object} schemas.EmployeeResponse
+//  @Failure        404
+//  @Router         /Employee/{id} [get]
 func (api *API) getEmployeeId(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -60,6 +103,17 @@ func (api *API) getEmployeeId(c echo.Context) error {
 	return c.JSON(http.StatusOK, employee)
 }
 
+// updateEmployees godoc
+//
+//  @Summary        Update a employee
+//  @Desciption     Update a employee details
+//  @Tags           employees
+//  @Accept         json
+//  @Produce        json
+//  @Sucess         200 {object} schemas.EmployeeResponse
+//  @Failure        404
+//  @Failure        500
+//  @Router         /Employee/{id} [put]
 func (api *API) updateEmployee(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -111,6 +165,18 @@ func updateEmployeeInfo(recivedEmployee, employee schemas.Employee) schemas.Empl
 
 	return employee
 }
+
+// deleteEmployees godoc
+//
+//  @Summary        Delete a employee
+//  @Desciption     Delete a employee details
+//  @Tags           employees
+//  @Accept         json
+//  @Produce        json
+//  @Sucess         200 {object} schemas.EmployeeResponse
+//  @Failure        404
+//  @Failure        500
+//  @Router         /Employee/{id} [delete]
 func (api *API) deleteEmployee(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

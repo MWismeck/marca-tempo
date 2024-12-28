@@ -55,3 +55,12 @@ func (e *EmployeeHandler) DeleteEmployee(employee schemas.Employee) error {
 
 	return e.DB.Delete(&employee).Error
 }
+
+func (e *EmployeeHandler) GetFilteredEmployee(active bool) ([]schemas.Employee, error) {
+	filteredEmployees := []schemas.Employee{}
+
+	err := e.DB.Where("active= ?", active).Find(&filteredEmployees)
+
+	
+	return filteredEmployees, err.Error
+}

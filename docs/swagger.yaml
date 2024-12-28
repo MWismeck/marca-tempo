@@ -1,0 +1,70 @@
+info:
+  contact: {}
+paths:
+  /Employee/{id}:
+    delete:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Delete a employee
+      tags:
+      - employees
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "404":
+          description: Not Found
+      summary: Get a list of employees
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Update a employee
+      tags:
+      - employees
+  /Employees/:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Registration
+        in: path
+        name: register
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "404":
+          description: Not Found
+      summary: Get a list of employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+      summary: Create employee
+      tags:
+      - employees
+swagger: "2.0"
