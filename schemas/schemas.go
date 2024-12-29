@@ -55,3 +55,17 @@ func NewResponse(employees []Employee) []EmployeeResponse {
 	return employeesResponse
 
 }
+type TimeLog struct {
+	gorm.Model
+	EmployeeID          uint      `json:"employee_id"`
+	EntryTime           time.Time `json:"entry_time"`      // Entrada
+	LunchExitTime       time.Time `json:"lunch_exit_time"` // Saída para o almoço
+	LunchReturnTime     time.Time `json:"lunch_return_time"` // Retorno do almoço
+	ExitTime            time.Time `json:"exit_time"`       // Saída do expediente
+	ExtraHours          float32   `json:"extra_hours"`     // Horas extras
+	MissingHours        float32   `json:"missing_hours"`   // Horas faltantes
+	Balance             float32   `json:"balance"`         // Saldo de horas
+	Workload            float32   `json:"workload"`        // Carga horária
+
+}
+

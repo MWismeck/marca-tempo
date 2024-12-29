@@ -2,16 +2,18 @@ package main
 
 import (
 	"github.com/MWismeck/marca-tempo/api"
-	"github.com/rs/zerolog/log"
+	"github.com/MWismeck/marca-tempo/db"
+	"log"
 )
 
 func main() {
+	// Inicializa o banco de dados
+	database := db.Init()
 
-	server := api.NewServer()
-
-	server.ConfigureRoutes()
+	// Inicializa e inicia o servidor
+	server := api.NewServer(database)
 
 	if err := server.Start(); err != nil {
-		log.Fatal().Err(err).Msgf("Failed to start server: %s", err.Error())
+		log.Fatal("Failed to start server:", err)
 	}
 }

@@ -1,3 +1,6 @@
+definitions:
+  schemas.TimeLog:
+    type: object
 info:
   contact: {}
 paths:
@@ -67,4 +70,127 @@ paths:
       summary: Create employee
       tags:
       - employees
+  /timeLogs:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all time logs for a specific employee
+      parameters:
+      - description: Employee ID
+        in: query
+        name: employee_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/schemas.TimeLog'
+            type: array
+        "400":
+          description: Invalid employee ID
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get time logs
+      tags:
+      - timeLogs
+    post:
+      consumes:
+      - application/json
+      description: Create a new time log entry for an employee
+      parameters:
+      - description: Time Log Data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TimeLog'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/schemas.TimeLog'
+        "400":
+          description: Invalid time log data
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a time log
+      tags:
+      - timeLogs
+  /timeLogs/{id}:
+    delete:
+      description: Delete an existing time log entry for an employee
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Time log deleted
+          schema:
+            type: string
+        "404":
+          description: Time log not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Delete a time log
+      tags:
+      - timeLogs
+    put:
+      consumes:
+      - application/json
+      description: Update an existing time log entry for an employee
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated Time Log Data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.TimeLog'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TimeLog'
+        "400":
+          description: Invalid time log data
+          schema:
+            type: string
+        "404":
+          description: Time log not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Update a time log
+      tags:
+      - timeLogs
 swagger: "2.0"
