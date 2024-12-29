@@ -112,7 +112,21 @@ func (api *API) updateTimeLog(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Time log not found")
 	}
 
-	// Atualiza os campos de horário se necessário
+	// Atualiza os campos de horário se necessário, e caso não seja passado, usa o horário atual
+	if updatedTimeLog.EntryTime.IsZero() {
+		updatedTimeLog.EntryTime = time.Now() // Hora atual do sistema
+	}
+	if updatedTimeLog.LunchExitTime.IsZero() {
+		updatedTimeLog.LunchExitTime = time.Now() // Hora atual do sistema
+	}
+	if updatedTimeLog.LunchReturnTime.IsZero() {
+		updatedTimeLog.LunchReturnTime = time.Now() // Hora atual do sistema
+	}
+	if updatedTimeLog.ExitTime.IsZero() {
+		updatedTimeLog.ExitTime = time.Now() // Hora atual do sistema
+	}
+
+	// Atualiza os campos de horário no registro existente
 	if !updatedTimeLog.EntryTime.IsZero() {
 		existingTimeLog.EntryTime = updatedTimeLog.EntryTime
 	}
