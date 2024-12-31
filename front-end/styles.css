@@ -1,0 +1,179 @@
+/* Configuração Geral */
+
+@font-face {
+  font-family: 'Lato';
+  src: url('fonts/Lato-Regular.ttf') format('truetype');
+  font-weight: 400; 
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Lato';
+  src: url('fonts/Lato-Bold.ttf') format('truetype');
+  font-weight: 700; 
+  font-style: normal;
+}
+body {
+  margin: 0;
+  font-family: 'Lato', sans-serif;
+  background-color: #73d060; /* Fundo principal */
+}
+
+h1, h2 {
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Tela de Login */
+.login-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Altura total da tela */
+  background-color: #56b546; /* Fundo da tela de login */
+}
+
+.login-card {
+  background-color: #389a2b; /* Fundo do cartão de login */
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+  width: 300px;
+  color: #fff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Leve sombra */
+}
+
+.input-field {
+  width: 100%; /* Largura total do cartão */
+  margin: 10px 0; /* Espaçamento entre os campos */
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #1b7f11; /* Botão de login */
+  border: none;
+  color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  background-color: #389a2b; /* Hover do botão de login */
+}
+
+.support-link {
+  display: block;
+  margin-top: 10px;
+  color: #91eb7a; /* Link de suporte */
+  text-decoration: none;
+}
+
+/* Tela de Registros */
+.dashboard-section {
+  padding: 20px;
+  background-color: #73d060; /* Fundo principal */
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+h1.dashboard-title {
+  color: #1b7f11; /* Título principal */
+  font-size: 24px;
+}
+
+.btn {
+  background-color: #1b7f11; /* Botões principais */
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 14px;
+  text-transform: uppercase;
+  display: inline-block;
+  width: auto;
+}
+
+.btn:hover {
+  background-color: #389a2b; /* Cor de fundo no hover */
+}
+
+.btn-secondary {
+  background-color: #389a2b; /* Botão secundário */
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 14px;
+  text-transform: uppercase;
+  margin-top: 20px; /* Adiciona margem superior para espaçamento */
+}
+
+.table-container {
+  margin-top: 20px; /* Adiciona um espaço entre o botão e a tabela */
+  border: 2px solid #389a2b; /* Bordas da tabela */
+  background-color: #91eb7a; /* Fundo leve para destacar */
+  padding: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+table th, table td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+table th {
+  background-color: #1b7f11; /* Cabeçalho da tabela */
+  color: #fff;
+  font-weight: bold;
+}
+
+table td {
+  color: #555;
+}
+
+table td.positive {
+  color: #1b7f11; /* Indicadores positivos */
+}
+
+table td.negative {
+  color: red; /* Indicadores negativos permanecem destacados */
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .login-card, .dashboard-section {
+    width: 100%;
+    padding: 10px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  table {
+    font-size: 12px;
+  }
+}
