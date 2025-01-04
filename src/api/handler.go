@@ -2,8 +2,8 @@ package api
 
 import (
 	"errors"
-	_ "github.com/MWismeck/marca-tempo/docs"
-	"github.com/MWismeck/marca-tempo/schemas"
+	_ "github.com/MWismeck/marca-tempo/src/docs"
+	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"

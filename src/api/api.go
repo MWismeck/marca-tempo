@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
     "gorm.io/gorm"
-	"github.com/MWismeck/marca-tempo/db"
+	"github.com/MWismeck/marca-tempo/src/db"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggo/echo-swagger"
