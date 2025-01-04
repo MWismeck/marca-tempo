@@ -6,17 +6,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Usuários</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/public/css/styles.css">
 </head>
 
 <body>
     <div class="container">
         <!-- Componente de registro -->
-        <div id="register"></div>
+        <div id="register-component"></div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="register.js"></script>
+    <script>
+        // Renderizar o componente de registro dinamicamente
+        document.getElementById('register-component').innerHTML = `
+            <div class="card p-4 mx-auto mt-5" style="max-width: 600px;">
+                <h3 class="text-center color1">Registro de Funcionário</h3>
+                <form id="register-form">
+                    <div class="mb-3">
+                        <label for="register-name" class="form-label">Nome Completo</label>
+                        <input type="text" class="form-control" id="register-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-cpf" class="form-label">CPF</label>
+                        <input type="text" class="form-control" id="register-cpf" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-rg" class="form-label">RG</label>
+                        <input type="text" class="form-control" id="register-rg" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="register-email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-age" class="form-label">Idade</label>
+                        <input type="number" class="form-control" id="register-age" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-workload" class="form-label">Carga Horária (em horas)</label>
+                        <input type="number" step="0.1" class="form-control" id="register-workload" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="register-active" class="form-label">Ativo</label>
+                        <select class="form-select" id="register-active" required>
+                            <option value="true">Sim</option>
+                            <option value="false">Não</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn color3 w-100">Registrar</button>
+                </form>
+            </div>
+        `;
+
+        // Adicionar funcionalidade ao formulário
+        const form = document.getElementById('register-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const employee = {
+                name: document.getElementById('register-name').value,
+                cpf: document.getElementById('register-cpf').value,
+                rg: document.getElementById('register-rg').value,
+                email: document.getElementById('register-email').value,
+                age: parseInt(document.getElementById('register-age').value, 10),
+                workload: parseFloat(document.getElementById('register-workload').value),
+                active: document.getElementById('register-active').value === "true"
+            };
+
+            try {
+                const response = await axios.post('/employee/', employee);
+
+                if (response.status === 201) {
+                    alert('Funcionário registrado com sucesso!');
+                    form.reset();
+                }
+            } catch (error) {
+                alert('Erro ao registrar o funcionário. Verifique os dados e tente novamente.');
+                console.error(error);
+            }
+        });
+    </script>
 </body>
 
 </html>

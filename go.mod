@@ -1,4 +1,4 @@
-module github.com/MWismeck/marca-tempo
+module github.com/MWismeck/marca-tempo/src/api
 
 go 1.23.3
 

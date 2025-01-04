@@ -1,7 +1,7 @@
 package db
 
 import (
-	"github.com/MWismeck/marca-tempo/schemas"
+	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

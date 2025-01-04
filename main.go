@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/MWismeck/marca-tempo/api"
-	"github.com/MWismeck/marca-tempo/db"
+	"github.com/MWismeck/marca-tempo/src/api"
+	"github.com/MWismeck/marca-tempo/src/db"
 	"log"
 )
 

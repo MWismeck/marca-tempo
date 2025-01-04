@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/MWismeck/marca-tempo/schemas"
+	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"net/http"
