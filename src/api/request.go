@@ -10,7 +10,7 @@ type EmployeeRequest struct {
 	Age      int     `json:"age"`
 	Active   *bool   `json:"active"` // using bool as a pointer to force true/false
 	Workload float32 `json:"workload"`
-	//IsManager *bool    `json:"ismanager"`
+	Password string  `json:"password"`
 }
 
 func errParamRequired(param, typ string) error {

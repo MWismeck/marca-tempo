@@ -7,17 +7,18 @@ import (
 )
 
 type Employee struct {
-	gorm.Model
+    gorm.Model
+    Name     string  `json:"name"`
+    CPF      string  `json:"cpf"`
+    RG       string  `json:"rg"`
+    Email    string  `json:"email"`
+    Age      int     `json:"age"`
+    Active   bool    `json:"active"`
+    Workload float32 `json:"workload"`
 
-	Name     string  `json:"name"`
-	CPF      string  `json:"cpf"`
-	RG       string  `json:"rg"`
-	Email    string  `json:"email"`
-	Age      int     `json:"age"`
-	Active   bool    `json:"active"`
-	Workload float32 `json:"workload"`
-	//IsManager bool `json:"ismanager"`
+	Login Login `gorm:"foreignKey:Email;constraint:OnDelete:CASCADE"` // Relacionamento 1:1 com Login
 }
+
 type EmployeeResponse struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -68,4 +69,10 @@ type TimeLog struct {
 	Workload            float32   `json:"workload"`        // Carga horária
 
 }
+type Login struct {
+    gorm.Model
+    Email    string `json:"email" gorm:"unique"` 
+    Password string `json:"password"`
+}
+
 

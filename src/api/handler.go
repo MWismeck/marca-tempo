@@ -2,13 +2,15 @@ package api
 
 import (
 	"errors"
-	_ "github.com/MWismeck/marca-tempo/src/docs"
+	_"github.com/MWismeck/marca-tempo/src/docs"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
+	"golang.org/x/crypto/bcrypt"
+	
 )
 
 // getEmployees godoc
@@ -194,3 +196,78 @@ func (api *API) deleteEmployee(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, employee)
 }
+
+
+
+func (api *API) login(c echo.Context) error {
+    loginReq := struct {
+        Email    string `json:"email"`
+        Password string `json:"password"`
+    }{}
+
+    if err := c.Bind(&loginReq); err != nil {
+        return c.String(http.StatusBadRequest, "Invalid request")
+    }
+
+    var login schemas.Login
+    if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&login).Error; err != nil {
+        return c.String(http.StatusUnauthorized, "Invalid email or password")
+    }
+
+    if !CheckPasswordHash(loginReq.Password, login.Password) {
+        return c.String(http.StatusUnauthorized, "Invalid email or password")
+    }
+
+    return c.JSON(http.StatusOK, map[string]interface{}{
+        "message":      "Login successful",
+        "employee_id":  login.Email,
+    })
+}
+
+
+type PasswordRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+// createOrUpdatePassword cadastra ou atualiza a senha de um funcionário
+func (api *API) createOrUpdatePassword(c echo.Context) error {
+	var req PasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+	}
+
+	// Busca o funcionário pelo email
+	var employee schemas.Employee
+	if err := api.DB.DB.Where("email = ?", req.Email).First(&employee).Error; err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Employee not found"})
+	}
+
+	// Hash da senha
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
+	}
+
+	// Verifica se já existe um registro de login
+	var login schemas.Login
+	if err := api.DB.DB.Where("email = ?", req.Email).First(&login).Error; err == nil {
+		// Atualiza a senha
+		login.Password = string(hashedPassword)
+		if err := api.DB.DB.Save(&login).Error; err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
+		}
+	} else {
+		// Cria um novo registro de login
+		newLogin := schemas.Login{
+			Email:    req.Email,
+			Password: string(hashedPassword),
+		}
+		if err := api.DB.DB.Create(&newLogin).Error; err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create login"})
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
+}
+

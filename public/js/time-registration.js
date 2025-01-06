@@ -1,60 +1,80 @@
-// Renderizar o componente de registro de ponto
-document.getElementById('time-registration-component').innerHTML = `
-    <div class="card p-4 mx-auto mt-5" style="max-width: 700px;">
-        <h3 class="text-center text-primary">Registro de Ponto</h3>
-        <form id="time-registration-form">
-            <div class="mb-3">
-                <label for="employee-id" class="form-label">ID do Funcionário</label>
-                <input type="number" class="form-control" id="employee-id" placeholder="Ex.: 123" required>
-            </div>
-            <div class="mb-3">
-                <label for="entry-time" class="form-label">Horário de Entrada</label>
-                <input type="datetime-local" class="form-control" id="entry-time" required>
-            </div>
-            <div class="mb-3">
-                <label for="lunch-exit-time" class="form-label">Saída para Almoço</label>
-                <input type="datetime-local" class="form-control" id="lunch-exit-time">
-            </div>
-            <div class="mb-3">
-                <label for="lunch-return-time" class="form-label">Retorno do Almoço</label>
-                <input type="datetime-local" class="form-control" id="lunch-return-time">
-            </div>
-            <div class="mb-3">
-                <label for="exit-time" class="form-label">Horário de Saída</label>
-                <input type="datetime-local" class="form-control" id="exit-time">
-            </div>
-            <div class="mb-3">
-                <label for="workload" class="form-label">Carga Horária (em horas)</label>
-                <input type="number" step="0.1" class="form-control" id="workload" placeholder="Ex.: 8">
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Registrar Ponto</button>
-        </form>
-    </div>
-`;
+// Botão de registro de ponto
+document.getElementById('register-time-btn').addEventListener('click', async () => {
+    const employeeId = localStorage.getItem('employee_id');
 
-// Adicionar funcionalidade ao formulário
-const form = document.getElementById('time-registration-form');
-form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const timeLog = {
-        employee_id: parseInt(document.getElementById('employee-id').value, 10),
-        entry_time: document.getElementById('entry-time').value,
-        lunch_exit_time: document.getElementById('lunch-exit-time').value || null,
-        lunch_return_time: document.getElementById('lunch-return-time').value || null,
-        exit_time: document.getElementById('exit-time').value || null,
-        workload: parseFloat(document.getElementById('workload').value) || 0
-    };
+    if (!employeeId) {
+        alert('Funcionário não autenticado. Faça login novamente.');
+        return;
+    }
 
     try {
-        const response = await axios.post('/time-log/', timeLog);
+        // Tenta buscar o último registro de ponto do funcionário
+        const response = await axios.get('http://localhost:8080/time_logs', {
+            params: { employee_id: employeeId },
+        });
 
-        if (response.status === 201) {
-            alert('Registro de ponto realizado com sucesso!');
-            form.reset();
+        const logs = response.data;
+
+        if (logs && logs.length > 0) {
+            const lastLog = logs[logs.length - 1]; // Último registro de ponto
+
+            // Verifica se o último registro precisa ser atualizado
+            if (!lastLog.exit_time) {
+                // Atualiza o horário de saída
+                const updateResponse = await axios.put(`http://localhost:8080/time_logs/${lastLog.id}`, {
+                    exit_time: new Date().toISOString(), // Horário atual
+                });
+
+                if (updateResponse.status === 200) {
+                    alert('Horário de saída registrado com sucesso!');
+                    fetchTimeLogs(); // Atualiza a lista de registros
+                }
+                return;
+            }
+        }
+
+        // Se não houver registros abertos, cria um novo
+        const createResponse = await axios.post('http://localhost:8080/time_logs/', {
+            employee_id: employeeId,
+            entry_time: new Date().toISOString(), // Horário atual
+        });
+
+        if (createResponse.status === 201) {
+            alert('Horário de entrada registrado com sucesso!');
+            fetchTimeLogs(); // Atualiza a lista de registros
         }
     } catch (error) {
-        alert('Erro ao registrar o ponto. Verifique os dados e tente novamente.');
+        alert('Erro ao registrar o ponto.');
         console.error(error);
     }
 });
+
+// Função para buscar e exibir registros de ponto
+async function fetchTimeLogs() {
+    const employeeId = localStorage.getItem('employee_id');
+
+    if (!employeeId) {
+        alert('Funcionário não autenticado. Faça login novamente.');
+        return;
+    }
+
+    try {
+        const response = await axios.get('http://localhost:8080/time_logs', {
+            params: { employee_id: employeeId },
+        });
+
+        const logsContainer = document.getElementById('time-logs-container');
+        logsContainer.innerHTML = response.data.map(log => `
+            <div class="time-log border p-2 mb-2 rounded">
+                <p><strong>Entrada:</strong> ${new Date(log.entry_time).toLocaleString()}</p>
+                <p><strong>Saída:</strong> ${log.exit_time ? new Date(log.exit_time).toLocaleString() : '---'}</p>
+            </div>
+        `).join('');
+    } catch (error) {
+        alert('Erro ao buscar registros de ponto.');
+        console.error(error);
+    }
+}
+
+// Carrega os registros ao abrir a página
+fetchTimeLogs();

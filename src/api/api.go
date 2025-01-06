@@ -95,6 +95,11 @@ func (api *API) ConfigureRoutes() {
 	api.Echo.GET("/time_logs/", api.getTimeLogs) // Buscar logs de ponto
 	api.Echo.DELETE("/time_logs/:id", api.deleteTimeLog) // Deletar um ponto
 
+	api.Echo.POST("/login", api.login)
+	api.Echo.POST("/login/password", api.createOrUpdatePassword)
+
+
+
 
 	api.Echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 }
