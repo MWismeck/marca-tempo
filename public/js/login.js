@@ -9,7 +9,12 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
 
         if (response.status === 200) {
             alert('Login realizado com sucesso!');
-            localStorage.setItem('employee_id', response.data.employee_id);
+            const employeeId = response.data.employee_id;
+
+            // Armazena o ID no localStorage
+            localStorage.setItem('employee_id', employeeId);
+
+            // Redireciona para a página de ponto
             window.location.href = 'time-registration.html';
         }
     } catch (err) {

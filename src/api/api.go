@@ -8,6 +8,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggo/echo-swagger"
+	"github.com/MWismeck/marca-tempo/src/schemas"
+	"github.com/labstack/echo/v4/middleware"
+	
+	
 )
 
 type API struct {
@@ -24,6 +28,11 @@ type API struct {
 func NewServer(database *gorm.DB) *API {
 	// Inicializa o Echo
 	e := echo.New()
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+        AllowOrigins: []string{"http://localhost:3000", "http://localhost:8080"}, // Permitir origens específicas
+        AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},       // Métodos HTTP permitidos
+        AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType}, // Cabeçalhos permitidos
+    }))
 
 	// Cria o EmployeeHandler com a instância do banco de dados
 	employDB := db.NewEmployeeHandler(database)
@@ -54,30 +63,51 @@ func (api *API) Shutdown() error {
 	return api.Echo.Shutdown(context.Background())
 }
 
-// startPeriodicTasks gerencia tarefas como reset de logs de ponto
 func (api *API) startPeriodicTasks() {
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
-	// Executa o reset imediatamente ao iniciar
-	api.resetTimeLogs()
+	// Executa o setup imediatamente ao iniciar
+	api.setupNewDay()
 
 	for {
 		select {
 		case <-ticker.C:
-			api.resetTimeLogs()
+			api.setupNewDay()
 		}
 	}
 }
 
-// resetTimeLogs limpa os logs de ponto no banco de dados
-func (api *API) resetTimeLogs() {
-	if err := api.DB.DB.Exec("DELETE FROM time_logs").Error; err != nil {
-		log.Error().Err(err).Msg("Error resetting time logs")
-	} else {
-		log.Info().Msg("Time logs reset successfully")
+// setupNewDay cria registros para o novo dia
+func (api *API) setupNewDay() {
+	// Obtém a data atual
+	currentDate := time.Now().Truncate(24 * time.Hour)
+
+	// Lista todos os IDs de funcionários
+	var employeeIDs []int
+	if err := api.DB.DB.Table("employees").Select("id").Scan(&employeeIDs).Error; err != nil {
+		log.Error().Err(err).Msg("Failed to retrieve employee IDs")
+		return
+	}
+
+	// Para cada funcionário, cria um registro para o novo dia
+	for _, id := range employeeIDs {
+		newLog := schemas.TimeLog{
+			ID : id,
+			LogDate:    currentDate,
+		}
+
+		// Insere o registro somente se não existir um para o mesmo funcionário e dia
+		err := api.DB.DB.Where("employee_id = ? AND log_date = ?", id, currentDate).
+			FirstOrCreate(&newLog).Error
+		if err != nil {
+			log.Error().Err(err).Msgf("Failed to create new log for employee %d", id)
+		} else {
+			log.Info().Msgf("Created new log for employee %d on %s", id, currentDate.Format("2006-01-02"))
+		}
 	}
 }
+
 
 func (api *API) ConfigureRoutes() {
 
@@ -97,8 +127,6 @@ func (api *API) ConfigureRoutes() {
 
 	api.Echo.POST("/login", api.login)
 	api.Echo.POST("/login/password", api.createOrUpdatePassword)
-
-
 
 
 	api.Echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())

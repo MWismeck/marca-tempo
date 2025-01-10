@@ -12,15 +12,25 @@ registerForm.addEventListener('submit', async (e) => {
         active: document.getElementById('register-active').value === "true"
     };
 
+    const password = document.getElementById('register-password').value;
     try {
-        const response = await axios.post('http://localhost:8080/employee/', employee);
+        // Cadastrar funcionário
+        const employeeResponse = await axios.post('http://localhost:8080/employee/', employee);
 
-        if (response.status === 201) {
-            alert('Funcionário registrado com sucesso!');
-            registerForm.reset();
+        if (employeeResponse.status === 201) {
+            // Cadastrar senha
+            const passwordResponse = await axios.post('http://localhost:8080/login/password', {
+                email: employee.email,
+                password: password
+            });
+
+            if (passwordResponse.status === 200) {
+                alert('Funcionário e senha cadastrados com sucesso!');
+                registerForm.reset();
+            }
         }
     } catch (err) {
-        alert('Erro ao registrar funcionário.');
+        alert('Erro ao registrar funcionário ou senha.');
         console.error(err);
     }
 });

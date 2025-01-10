@@ -30,7 +30,7 @@ func (api *API) createTimeLog(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Invalid time log data")
 	}
 
-	if timeLog.EmployeeID == 0 {
+	if timeLog.ID == 0 {
 		log.Error().Msg("Invalid employee ID")
 		return c.String(http.StatusBadRequest, "Invalid employee ID")
 	}
@@ -141,7 +141,7 @@ func (api *API) updateTimeLog(c echo.Context) error {
 	}
 
 	// Defina um valor fixo para a carga horária diária
-	workload := float32(8) // Exemplo: 8 horas de carga horária por dia
+	workload := float32(8) 
 
 	// Calcula as horas extras, faltantes e o saldo
 	extraHours, missingHours, balance := calculateHours(existingTimeLog.EntryTime, existingTimeLog.LunchExitTime, existingTimeLog.LunchReturnTime, existingTimeLog.ExitTime, workload)

@@ -17,7 +17,7 @@ func Init() *gorm.DB {
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed to initialize SQLite: %s", err.Error())
 	}
-	db.AutoMigrate(&schemas.Employee{}, &schemas.TimeLog{})
+	db.AutoMigrate(&schemas.Employee{}, &schemas.TimeLog{}, &schemas.Login{})
 	return db
 }
 

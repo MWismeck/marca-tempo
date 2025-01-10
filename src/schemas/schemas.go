@@ -16,9 +16,9 @@ type Employee struct {
     Active   bool    `json:"active"`
     Workload float32 `json:"workload"`
 
-	Login Login `gorm:"foreignKey:Email;constraint:OnDelete:CASCADE"` // Relacionamento 1:1 com Login
+	Login Login `gorm:"foreignKey:Email;constraint:OnDelete:CASCADE"`
+	TimeLogs []TimeLog `gorm:"foreignKey:EmployeeEmail;references:Email;"` 
 }
-
 type EmployeeResponse struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -58,17 +58,19 @@ func NewResponse(employees []Employee) []EmployeeResponse {
 }
 type TimeLog struct {
 	gorm.Model
-	EmployeeID          uint      `json:"employee_id"`
-	EntryTime           time.Time `json:"entry_time"`      // Entrada
-	LunchExitTime       time.Time `json:"lunch_exit_time"` // Saída para o almoço
-	LunchReturnTime     time.Time `json:"lunch_return_time"` // Retorno do almoço
-	ExitTime            time.Time `json:"exit_time"`       // Saída do expediente
-	ExtraHours          float32   `json:"extra_hours"`     // Horas extras
-	MissingHours        float32   `json:"missing_hours"`   // Horas faltantes
-	Balance             float32   `json:"balance"`         // Saldo de horas
-	Workload            float32   `json:"workload"`        // Carga horária
-
+	ID              int       `json:"id" gorm:"primaryKey"`
+	EmployeeEmail   string    `json:"employee_email" gorm:"not null"` 
+	LogDate         time.Time `json:"log_date" gorm:"not null"`
+	EntryTime       time.Time `json:"entry_time,omitempty"`
+	LunchExitTime   time.Time `json:"lunch_exit_time,omitempty"`
+	LunchReturnTime time.Time `json:"lunch_return_time,omitempty"`
+	ExitTime        time.Time `json:"exit_time,omitempty"`
+	ExtraHours      float32   `json:"extra_hours" gorm:"default:0"`
+	MissingHours    float32   `json:"missing_hours" gorm:"default:0"`
+	Balance         float32   `json:"balance" gorm:"default:0"`
+	CreatedAt       time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
+
 type Login struct {
     gorm.Model
     Email    string `json:"email" gorm:"unique"` 
