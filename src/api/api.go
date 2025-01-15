@@ -29,7 +29,7 @@ func NewServer(database *gorm.DB) *API {
 	// Inicializa o Echo
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-        AllowOrigins: []string{"http://localhost:3000", "http://localhost:8080"}, // Permitir origens específicas
+        AllowOrigins: []string{"http://localhost:8080"}, // Permitir origens específicas
         AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},       // Métodos HTTP permitidos
         AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType}, // Cabeçalhos permitidos
     }))

@@ -55,26 +55,26 @@ func (api *API) createTimeLog(c echo.Context) error {
 // @Failure      500 {string} string "Internal server error"
 // @Router       /timeLogs [get]
 func (api *API) getTimeLogs(c echo.Context) error {
-	employeeIDStr := c.QueryParam("employee_id")
+    // Extrai o parâmetro employee_email em vez de employee_id
+    employeeEmail := c.QueryParam("employee_email")
+    if employeeEmail == "" {
+        log.Error().Msg("Invalid employee email")
+        return c.String(http.StatusBadRequest, "Invalid employee email")
+    }
 
-	// Validação de entrada
-	employeeID, err := strconv.Atoi(employeeIDStr)
-	if err != nil || employeeID <= 0 {
-		log.Error().Err(err).Msg("Invalid employee ID")
-		return c.String(http.StatusBadRequest, "Invalid employee ID")
-	}
+    var timeLogs []schemas.TimeLog
 
-	var timeLogs []schemas.TimeLog
+    // Consulta usando employee_email
+    if err := api.DB.DB.Where("employee_email = ?", employeeEmail).Find(&timeLogs).Error; err != nil {
+        log.Error().Err(err).Msgf("Failed to retrieve time logs for employee email %s", employeeEmail)
+        return c.String(http.StatusInternalServerError, "Error retrieving time logs")
+    }
 
-	// Consulta no banco
-	if err := api.DB.DB.Where("employee_id = ?", employeeID).Find(&timeLogs).Error; err != nil {
-		log.Error().Err(err).Msgf("Failed to retrieve time logs for employee ID %d", employeeID)
-		return c.String(http.StatusInternalServerError, "Error retrieving time logs")
-	}
-
-	return c.JSON(http.StatusOK, timeLogs)
-
+    return c.JSON(http.StatusOK, timeLogs)
 }
+
+
+
 // updateTimeLog godoc
 //
 // @Summary      Update a time log

@@ -11,7 +11,7 @@ type Employee struct {
     Name     string  `json:"name"`
     CPF      string  `json:"cpf"`
     RG       string  `json:"rg"`
-    Email    string  `json:"email"`
+    Email    string  `json:"email" gorm:"type:varchar(255);unique"`
     Age      int     `json:"age"`
     Active   bool    `json:"active"`
     Workload float32 `json:"workload"`
@@ -59,7 +59,7 @@ func NewResponse(employees []Employee) []EmployeeResponse {
 type TimeLog struct {
 	gorm.Model
 	ID              int       `json:"id" gorm:"primaryKey"`
-	EmployeeEmail   string    `json:"employee_email" gorm:"not null"` 
+	EmployeeEmail   string    `json:"employee_email" gorm:"type:varchar(255);unique"`
 	LogDate         time.Time `json:"log_date" gorm:"not null"`
 	EntryTime       time.Time `json:"entry_time,omitempty"`
 	LunchExitTime   time.Time `json:"lunch_exit_time,omitempty"`
@@ -73,7 +73,7 @@ type TimeLog struct {
 
 type Login struct {
     gorm.Model
-    Email    string `json:"email" gorm:"unique"` 
+    Email     string    `json:"email" gorm:"type:varchar(255);unique"` 
     Password string `json:"password"`
 }
 
