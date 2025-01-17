@@ -59,7 +59,7 @@ func NewResponse(employees []Employee) []EmployeeResponse {
 type TimeLog struct {
 	gorm.Model
 	ID              int       `json:"id" gorm:"primaryKey"`
-	EmployeeEmail   string    `json:"employee_email" gorm:"type:varchar(255);unique"`
+	EmployeeEmail   string    `json:"employee_email" gorm:"type:varchar(255);not null"`
 	LogDate         time.Time `json:"log_date" gorm:"not null"`
 	EntryTime       time.Time `json:"entry_time,omitempty"`
 	LunchExitTime   time.Time `json:"lunch_exit_time,omitempty"`
@@ -73,8 +73,8 @@ type TimeLog struct {
 
 type Login struct {
     gorm.Model
-    Email     string    `json:"email" gorm:"type:varchar(255);unique"` 
-    Password string `json:"password"`
+    Email     string    `json:"email" gorm:"type:varchar(255);unique;not null"` 
+    Password string `json:"password gorm"`
 }
 
 

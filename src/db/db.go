@@ -65,7 +65,7 @@ func (e *EmployeeHandler) GetFilteredEmployee(active bool) ([]schemas.Employee, 
 	return filteredEmployees, err
 }
 
-// Adicionar um novo registro de ponto
+
 func (e *EmployeeHandler) AddTimeLog(timeLog schemas.TimeLog) error {
 	if result := e.DB.Create(&timeLog); result.Error != nil {
 		log.Error().Msg("Failed to create time log")
@@ -75,7 +75,6 @@ func (e *EmployeeHandler) AddTimeLog(timeLog schemas.TimeLog) error {
 	return nil
 }
 
-// Atualizar o horário de saída (exitTime) de um funcionário
 func (e *EmployeeHandler) UpdateExitTime(timeLogID uint, exitTime time.Time) error {
 	var timeLog schemas.TimeLog
 	if err := e.DB.First(&timeLog, timeLogID).Error; err != nil {
@@ -91,7 +90,7 @@ func (e *EmployeeHandler) UpdateExitTime(timeLogID uint, exitTime time.Time) err
 	return nil
 }
 
-// Buscar os logs de ponto de um funcionário (para entryTime e exitTime)
+
 func (e *EmployeeHandler) GetTimeLogsByEmployeeID(employeeID uint) ([]schemas.TimeLog, error) {
 	var timeLogs []schemas.TimeLog
 	err := e.DB.Where("employee_email = ?", employeeID).Find(&timeLogs).Error

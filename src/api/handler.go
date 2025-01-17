@@ -230,35 +230,35 @@ type PasswordRequest struct {
 	Password string `json:"password"`
 }
 
-// createOrUpdatePassword cadastra ou atualiza a senha de um funcionário
+
 func (api *API) createOrUpdatePassword(c echo.Context) error {
 	var req PasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
-	// Busca o funcionário pelo email
+	
 	var employee schemas.Employee
 	if err := api.DB.DB.Where("email = ?", req.Email).First(&employee).Error; err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Employee not found"})
 	}
 
-	// Hash da senha
+	
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
 	}
 
-	// Verifica se já existe um registro de login
+	
 	var login schemas.Login
 	if err := api.DB.DB.Where("email = ?", req.Email).First(&login).Error; err == nil {
-		// Atualiza a senha
+		
 		login.Password = string(hashedPassword)
 		if err := api.DB.DB.Save(&login).Error; err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
 		}
 	} else {
-		// Cria um novo registro de login
+		
 		newLogin := schemas.Login{
 			Email:    req.Email,
 			Password: string(hashedPassword),

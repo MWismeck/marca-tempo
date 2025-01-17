@@ -26,38 +26,38 @@ type API struct {
 // @BasePath /
 // @schemes http
 func NewServer(database *gorm.DB) *API {
-	// Inicializa o Echo
+
 	e := echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-        AllowOrigins: []string{"http://localhost:8080"}, // Permitir origens específicas
-        AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},       // Métodos HTTP permitidos
-        AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType}, // Cabeçalhos permitidos
+        AllowOrigins: []string{"http://localhost:8080"}, 
+        AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},       
+        AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType}, 
     }))
 
-	// Cria o EmployeeHandler com a instância do banco de dados
+	
 	employDB := db.NewEmployeeHandler(database)
 
-	// Configura o servidor e rotas
+	
 	api := &API{
 		Echo: e,
 		DB:   employDB,
 	}
 	api.ConfigureRoutes()
 
-	// Inicia tarefas periódicas em uma goroutine
+	
 	go api.startPeriodicTasks()
 
 	log.Info().Msg("Server initialized successfully")
 	return api
 }
 
-// Start inicia o servidor
+
 func (api *API) Start() error {
 	log.Info().Msg("Starting server...")
-	return api.Echo.Start(":8080") // Porta do servidor
+	return api.Echo.Start(":8080") 
 }
 
-// Shutdown encerra o servidor
+
 func (api *API) Shutdown() error {
 	log.Info().Msg("Shutting down server...")
 	return api.Echo.Shutdown(context.Background())
@@ -67,7 +67,7 @@ func (api *API) startPeriodicTasks() {
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
-	// Executa o setup imediatamente ao iniciar
+	
 	api.setupNewDay()
 
 	for {
@@ -78,26 +78,26 @@ func (api *API) startPeriodicTasks() {
 	}
 }
 
-// setupNewDay cria registros para o novo dia
+
 func (api *API) setupNewDay() {
-	// Obtém a data atual
+	
 	currentDate := time.Now().Truncate(24 * time.Hour)
 
-	// Lista todos os IDs de funcionários
+	
 	var employeeIDs []int
 	if err := api.DB.DB.Table("employees").Select("id").Scan(&employeeIDs).Error; err != nil {
 		log.Error().Err(err).Msg("Failed to retrieve employee IDs")
 		return
 	}
 
-	// Para cada funcionário, cria um registro para o novo dia
+	
 	for _, id := range employeeIDs {
 		newLog := schemas.TimeLog{
 			ID : id,
 			LogDate:    currentDate,
 		}
 
-		// Insere o registro somente se não existir um para o mesmo funcionário e dia
+		
 		err := api.DB.DB.Where("employee_id = ? AND log_date = ?", id, currentDate).
 			FirstOrCreate(&newLog).Error
 		if err != nil {
@@ -120,10 +120,10 @@ func (api *API) ConfigureRoutes() {
 	//  Routes time registration
 
 
-	api.Echo.POST("/time_logs/", api.createTimeLog) // Criar um novo ponto
-	api.Echo.PUT("/time_logs/:id", api.updateTimeLog) // Atualizar um ponto
-	api.Echo.GET("/time_logs/", api.getTimeLogs) // Buscar logs de ponto
-	api.Echo.DELETE("/time_logs/:id", api.deleteTimeLog) // Deletar um ponto
+	api.Echo.POST("/time_logs/", api.createTimeLog) 
+	api.Echo.PUT("/time_logs/:id", api.punchTime) 
+	api.Echo.GET("/time_logs/", api.getTimeLogs) 
+	api.Echo.DELETE("/time_logs/:id", api.deleteTimeLog) 
 
 	api.Echo.POST("/login", api.login)
 	api.Echo.POST("/login/password", api.createOrUpdatePassword)
