@@ -1,3 +1,4 @@
 {
-    "liveServer.settings.multiRootWorkspaceName": "MarcaTempo"
+    "liveServer.settings.multiRootWorkspaceName": "MarcaTempo",
+    "liveServer.settings.port": 8081
 }
