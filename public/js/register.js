@@ -11,26 +11,35 @@ registerForm.addEventListener('submit', async (e) => {
         workload: parseFloat(document.getElementById('register-workload').value),
         active: document.getElementById('register-active').value === "true"
     };
-
+    console.log('Enviando funcionário:', employee);
     const password = document.getElementById('register-password').value;
     try {
-        // Cadastrar funcionário
+        // Create Employee
         const employeeResponse = await axios.post('http://localhost:8080/employee/', employee);
 
-        if (employeeResponse.status === 201) {
-            // Cadastrar senha
+        if (employeeResponse.status === 200 || employeeResponse.status === 201) {
+            console.log('Employee created:', employeeResponse.data);
+
+            // Create or Update Password
             const passwordResponse = await axios.post('http://localhost:8080/login/password', {
                 email: employee.email,
                 password: password
             });
 
             if (passwordResponse.status === 200) {
+                console.log('Password updated:', passwordResponse.data);
                 alert('Funcionário e senha cadastrados com sucesso!');
                 registerForm.reset();
+            } else {
+                console.error('Failed to update password:', passwordResponse);
+                alert('Erro ao registrar a senha do funcionário.');
             }
+        } else {
+            console.error('Failed to create employee:', employeeResponse);
+            alert('Erro ao registrar funcionário.');
         }
     } catch (err) {
-        alert('Erro ao registrar funcionário ou senha.');
-        console.error(err);
+        console.error('Error during registration process:', err);
+        alert('Erro ao registrar funcionário ou senha. Verifique os logs para mais detalhes.');
     }
 });

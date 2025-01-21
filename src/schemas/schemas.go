@@ -16,7 +16,7 @@ type Employee struct {
     Active   bool    `json:"active"`
     Workload float32 `json:"workload"`
 
-	Login Login `gorm:"foreignKey:Email;constraint:OnDelete:CASCADE"`
+	Login Login `gorm:"foreignKey:Email;references:Email;constraint:OnDelete:CASCADE"`
 	TimeLogs []TimeLog `gorm:"foreignKey:EmployeeEmail;references:Email;"` 
 }
 type EmployeeResponse struct {
@@ -73,7 +73,7 @@ type TimeLog struct {
 
 type Login struct {
     gorm.Model
-    Email     string    `json:"email" gorm:"type:varchar(255);unique;not null"` 
+    Email    string `json:"email" gorm:"type:varchar(255);unique;not null"` 
     Password string `json:"password gorm"`
 }
 

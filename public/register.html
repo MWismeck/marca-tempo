@@ -18,10 +18,9 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Renderizar o componente de registro dinamicamente
         document.getElementById('register-component').innerHTML = `
             <div class="card p-4 mx-auto mt-5" style="max-width: 600px;">
-                <h3 class="text-center color1">Registro de Funcionário</h3>
+                <h3 class="text-center">Registro de Funcionário</h3>
                 <form id="register-form">
                     <div class="mb-3">
                         <label for="register-name" class="form-label">Nome Completo</label>
@@ -48,8 +47,9 @@
                         <input type="number" step="0.1" class="form-control" id="register-workload" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Senha</label>
-                        <input type="password" class="form-control" id="password" required>
+                        <label for="register-password" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="register-password" required>
+                    </div>
                     <div class="mb-3">
                         <label for="register-active" class="form-label">Ativo</label>
                         <select class="form-select" id="register-active" required>
@@ -57,13 +57,11 @@
                             <option value="false">Não</option>
                         </select>
                     </div>
-                    
-                    <button type="submit" class="btn color3 w-100">Registrar</button>
+                    <button type="submit" class="btn btn-primary w-100">Registrar</button>
                 </form>
             </div>
         `;
 
-        // Adicionar funcionalidade ao formulário
         const form = document.getElementById('register-form');
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -78,12 +76,21 @@
                 active: document.getElementById('register-active').value === "true"
             };
 
-            try {
-                const response = await axios.post('/employee/', employee);
+            const password = document.getElementById('register-password').value;
 
-                if (response.status === 201) {
-                    alert('Funcionário registrado com sucesso!');
-                    form.reset();
+            try {
+                const employeeResponse = await axios.post('http://localhost:8080/employee/', employee);
+
+                if (employeeResponse.status === 201) {
+                    const passwordResponse = await axios.post('http://localhost:8080/login/password', {
+                        email: employee.email,
+                        password: password
+                    });
+
+                    if (passwordResponse.status === 200) {
+                        alert('Funcionário e senha cadastrados com sucesso!');
+                        form.reset();
+                    }
                 }
             } catch (error) {
                 alert('Erro ao registrar o funcionário. Verifique os dados e tente novamente.');
