@@ -1,3 +1,34 @@
+// document.addEventListener("DOMContentLoaded", function () {
+//     const registerForm = document.getElementById('nregister');
+
+//     if (registerForm) {
+//         registerForm.addEventListener('submit', function (e) {
+//             e.preventDefault();
+//             window.location.href = "/register.html";
+//         });
+//     }
+// });
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("register.js carregado!");
+
+    const registerForm = document.getElementById('nregister');
+
+    if (registerForm) {
+        console.log("Formulário encontrado!");
+
+        registerForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            console.log("Redirecionando para register.html...");
+            window.location.href = "/register.html"; 
+        });
+    } else {
+        console.log("Formulário não encontrado!");
+    }
+});
+
+
+
+
 const registerForm = document.getElementById('register-form');
 registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
