@@ -58,46 +58,14 @@
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Registrar</button>
+                    <div class="mt-3">
+                        <a href="../index.html" class="btn btn-secondary w-100">Voltar para Login</a>
+                    </div>
                 </form>
             </div>
         `;
-
-        const form = document.getElementById('register-form');
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const employee = {
-                name: document.getElementById('register-name').value,
-                cpf: document.getElementById('register-cpf').value,
-                rg: document.getElementById('register-rg').value,
-                email: document.getElementById('register-email').value,
-                age: parseInt(document.getElementById('register-age').value, 10),
-                workload: parseFloat(document.getElementById('register-workload').value),
-                active: document.getElementById('register-active').value === "true"
-            };
-
-            const password = document.getElementById('register-password').value;
-
-            try {
-                const employeeResponse = await axios.post('http://localhost:8080/employee/', employee);
-
-                if (employeeResponse.status === 201) {
-                    const passwordResponse = await axios.post('http://localhost:8080/login/password', {
-                        email: employee.email,
-                        password: password
-                    });
-
-                    if (passwordResponse.status === 200) {
-                        alert('Funcionário e senha cadastrados com sucesso!');
-                        form.reset();
-                    }
-                }
-            } catch (error) {
-                alert('Erro ao registrar o funcionário. Verifique os dados e tente novamente.');
-                console.error(error);
-            }
-        });
     </script>
+    <script src="js/register.js"></script>
 </body>
 
 </html>

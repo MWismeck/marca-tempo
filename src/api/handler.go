@@ -218,9 +218,17 @@ func (api *API) login(c echo.Context) error {
         return c.String(http.StatusUnauthorized, "Invalid email or password")
     }
 
+    // Get employee details
+    var employee schemas.Employee
+    if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&employee).Error; err != nil {
+        return c.String(http.StatusInternalServerError, "Error retrieving employee details")
+    }
+
     return c.JSON(http.StatusOK, map[string]interface{}{
-        "message":      "Login successful",
-        "employee_id":  login.Email,
+        "message":        "Login successful",
+        "employee_id":    employee.ID,
+        "employee_email": employee.Email,
+        "employee_name":  employee.Name
     })
 }
 
@@ -270,4 +278,3 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }
-
