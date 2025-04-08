@@ -16,6 +16,20 @@ The project aims to provide an intuitive experience for employers and administra
 - **Data Integrity & Security**: Secure handling of employee personal data.
 - **System Time Logs**: Entry and exit times, lunch break times, and other time log data are now automatically populated with the system's current time if not provided by the user. This ensures that logs are always timestamped with accurate data.
 
+### **How to Run the Application**
+
+1. Make sure you have Go installed on your system (version 1.23.3 or higher).
+2. Clone the repository to your local machine.
+3. Navigate to the project directory.
+4. Run the following command to start the application:
+
+```bash
+go run main.go
+```
+
+5. The application will be available at http://localhost:8080
+6. The login page will be automatically loaded in your browser.
+
 ### **API Endpoints**
 
 The backend API provides the following routes for interacting with the employee records:

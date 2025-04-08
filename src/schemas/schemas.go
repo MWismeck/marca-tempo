@@ -74,7 +74,5 @@ type TimeLog struct {
 type Login struct {
     gorm.Model
     Email    string `json:"email" gorm:"type:varchar(255);unique;not null"` 
-    Password string `json:"password gorm"`
+    Password string `json:"password" gorm:"not null"`
 }
-
-

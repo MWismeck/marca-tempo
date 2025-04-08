@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (redirectForm) {
         redirectForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            window.location.href = "public/register.html";
+            window.location.href = "register.html";
         });
     }
 
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         
                         // Redireciona para o login após um breve delay
                         setTimeout(() => {
-                            window.location.href = "../index.html"; // Ajustado para voltar ao diretório raiz
+                            window.location.href = "index.html"; // Redirecionando para a página de login
                         }, 2000);
                     } else {
                         throw new Error('Falha ao registrar senha');

@@ -125,6 +125,7 @@ func (api *API) ConfigureRoutes() {
 	api.Echo.POST("/time_logs/", api.createTimeLog) 
 	api.Echo.PUT("/time_logs/:id", api.punchTime) 
 	api.Echo.GET("/time_logs/", api.getTimeLogs) 
+	api.Echo.GET("/time_logs/export", api.exportToExcel) 
 	api.Echo.DELETE("/time_logs/:id", api.deleteTimeLog) 
 
 	api.Echo.POST("/login", api.login)
@@ -138,5 +139,3 @@ func (api *API) ConfigureRoutes() {
 
 	api.Echo.GET("/swagger/*", echoSwagger.EchoWrapHandler())
 }
-
-

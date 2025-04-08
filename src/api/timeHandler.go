@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
@@ -176,6 +178,134 @@ func calculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTime time.Tim
 }
 
 
+// exportToExcel godoc
+//
+// @Summary      Export time logs to Excel
+// @Description  Export all time logs for a specific employee to Excel format
+// @Tags         timeLogs
+// @Accept       json
+// @Produce      application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Param        employee_email query string true "Employee Email"
+// @Success      200 {file} binary "Excel file download"
+// @Failure      400 {string} string "Invalid employee email"
+// @Failure      500 {string} string "Internal server error"
+// @Router       /time_logs/export [get]
+func (api *API) exportToExcel(c echo.Context) error {
+    employeeEmail := c.QueryParam("employee_email")
+    if employeeEmail == "" {
+        log.Error().Msg("Invalid employee email")
+        return c.String(http.StatusBadRequest, "Invalid employee email")
+    }
+
+    // Get employee details
+    var employee schemas.Employee
+    if err := api.DB.DB.Where("email = ?", employeeEmail).First(&employee).Error; err != nil {
+        log.Error().Err(err).Msg("Employee not found")
+        return c.String(http.StatusBadRequest, "Employee not found")
+    }
+
+    // Get time logs for the employee
+    var timeLogs []schemas.TimeLog
+    if err := api.DB.DB.Where("employee_email = ?", employeeEmail).Order("log_date DESC").Find(&timeLogs).Error; err != nil {
+        log.Error().Err(err).Msgf("Failed to retrieve time logs for employee email %s", employeeEmail)
+        return c.String(http.StatusInternalServerError, "Error retrieving time logs")
+    }
+
+    // Create a new Excel file
+    f := excelize.NewFile()
+    defer func() {
+        if err := f.Close(); err != nil {
+            log.Error().Err(err).Msg("Failed to close Excel file")
+        }
+    }()
+
+    // Create a new sheet
+    sheetName := "Registros de Ponto"
+    index, err := f.NewSheet(sheetName)
+    if err != nil {
+        log.Error().Err(err).Msg("Failed to create new sheet")
+        return c.String(http.StatusInternalServerError, "Error creating Excel file")
+    }
+    f.SetActiveSheet(index)
+
+    // Add employee information
+    f.SetCellValue(sheetName, "A1", "Relatório de Ponto")
+    f.SetCellValue(sheetName, "A2", fmt.Sprintf("Funcionário: %s", employee.Name))
+    f.SetCellValue(sheetName, "A3", fmt.Sprintf("Email: %s", employee.Email))
+    f.SetCellValue(sheetName, "A4", fmt.Sprintf("Data de Geração: %s", time.Now().Format("02/01/2006 15:04:05")))
+
+    // Add headers
+    headers := []string{"Data", "Entrada", "Saída Almoço", "Retorno Almoço", "Saída", "Horas Extras", "Horas Faltantes", "Saldo"}
+    for i, header := range headers {
+        cell := fmt.Sprintf("%c6", 'A'+i)
+        f.SetCellValue(sheetName, cell, header)
+    }
+
+    // Add data
+    for i, log := range timeLogs {
+        row := i + 7 // Start from row 7 (after headers)
+        
+        f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), log.LogDate.Format("02/01/2006"))
+        
+        if !log.EntryTime.IsZero() {
+            f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), log.EntryTime.Format("02/01/2006 15:04:05"))
+        }
+        
+        if !log.LunchExitTime.IsZero() {
+            f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), log.LunchExitTime.Format("02/01/2006 15:04:05"))
+        }
+        
+        if !log.LunchReturnTime.IsZero() {
+            f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), log.LunchReturnTime.Format("02/01/2006 15:04:05"))
+        }
+        
+        if !log.ExitTime.IsZero() {
+            f.SetCellValue(sheetName, fmt.Sprintf("E%d", row), log.ExitTime.Format("02/01/2006 15:04:05"))
+        }
+        
+        f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), fmt.Sprintf("%.2f", log.ExtraHours))
+        f.SetCellValue(sheetName, fmt.Sprintf("G%d", row), fmt.Sprintf("%.2f", log.MissingHours))
+        f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), fmt.Sprintf("%.2f", log.Balance))
+    }
+
+    // Apply some styling
+    styleHeader, err := f.NewStyle(&excelize.Style{
+        Font: &excelize.Font{Bold: true, Size: 12},
+        Fill: excelize.Fill{Type: "pattern", Color: []string{"#C6EFCE"}, Pattern: 1},
+        Border: []excelize.Border{
+            {Type: "top", Color: "#000000", Style: 1},
+            {Type: "bottom", Color: "#000000", Style: 1},
+            {Type: "left", Color: "#000000", Style: 1},
+            {Type: "right", Color: "#000000", Style: 1},
+        },
+        Alignment: &excelize.Alignment{Horizontal: "center"},
+    })
+    if err == nil {
+        f.SetCellStyle(sheetName, "A6", fmt.Sprintf("%c6", 'A'+len(headers)-1), styleHeader)
+    }
+
+    // Set column width
+    for i := 0; i < len(headers); i++ {
+        colName := fmt.Sprintf("%c", 'A'+i)
+        f.SetColWidth(sheetName, colName, colName, 20)
+    }
+
+    // Generate a buffer with the Excel file
+    buf, err := f.WriteToBuffer()
+    if err != nil {
+        log.Error().Err(err).Msg("Failed to write Excel to buffer")
+        return c.String(http.StatusInternalServerError, "Error generating Excel file")
+    }
+
+    // Set response headers
+    fileName := fmt.Sprintf("registros_ponto_%s_%s.xlsx", employee.Name, time.Now().Format("20060102"))
+    c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
+    c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    // Send the file
+    return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
+}
+
 // deleteTimeLog godoc
 //
 // @Summary      Delete a time log
@@ -210,6 +340,3 @@ func (api *API) deleteTimeLog(c echo.Context) error {
 
 	return c.String(http.StatusOK, "Time log deleted")
 }
-
-
-

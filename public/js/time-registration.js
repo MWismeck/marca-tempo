@@ -161,6 +161,38 @@ function checkAuthentication() {
     return true;
 }
 
+// Função para exportar registros para Excel
+document.getElementById('export-excel-btn').addEventListener('click', async () => {
+    const employeeEmail = localStorage.getItem('employee_email');
+
+    if (!employeeEmail) {
+        showStatusMessage('Funcionário não autenticado. Faça login novamente.', true);
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+        return;
+    }
+
+    try {
+        // Cria um link temporário para download
+        const link = document.createElement('a');
+        link.href = `http://localhost:8080/time_logs/export?employee_email=${encodeURIComponent(employeeEmail)}`;
+        link.setAttribute('download', 'registros_ponto.xlsx');
+        document.body.appendChild(link);
+        
+        // Simula um clique no link para iniciar o download
+        link.click();
+        
+        // Remove o link após o download
+        document.body.removeChild(link);
+        
+        showStatusMessage('Download do arquivo Excel iniciado!');
+    } catch (error) {
+        console.error('Erro ao exportar para Excel:', error);
+        showStatusMessage('Erro ao exportar registros para Excel.', true);
+    }
+});
+
 // Inicialização da página
 document.addEventListener('DOMContentLoaded', () => {
     if (checkAuthentication()) {

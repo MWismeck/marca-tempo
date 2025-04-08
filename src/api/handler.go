@@ -228,7 +228,7 @@ func (api *API) login(c echo.Context) error {
         "message":        "Login successful",
         "employee_id":    employee.ID,
         "employee_email": employee.Email,
-        "employee_name":  employee.Name
+        "employee_name":  employee.Name,
     })
 }
 
