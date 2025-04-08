@@ -1,4 +1,4 @@
-# Marca Tempo APP
+# 📌 Marca Tempo APP
 
 ## Digital Point Marker (Web App) - TCC
 
@@ -8,15 +8,44 @@ This project is a **Digital Point Marker Web Application** developed as part of 
 
 The project aims to provide an intuitive experience for employers and administrators to manage employee records, track work schedules, and ensure compliance with labor regulations.
 
-### **Features**
+---
+
+## ⚙️ **Technologies Used**
+
+- **Frontend**: HTML, CSS, JavaScript (for user interface and interactivity)
+- **Backend**: Golang (Go) (for API and business logic)
+- **Database**: SQLite
+- **Version Control**: Git and GitHub (for code versioning and collaboration)
+
+## 🗃️ **How the Application Works**
+
+1. **Employee Registration**: Admins can create, view, update, and delete employee records via the web app.
+2. **Digital Point Tracking**: Employees register their entry, break, and exit times through an intuitive web interface. If no times are provided, the system automatically populates them with the current date and time.
+3. **Data Management**: All actions are processed through a secure RESTful API, with the backend handling all data validation and storage.
+
+---
+
+## 🎯 **Project Goals**
+
+- **Efficiency**: Reduce manual processes for tracking employee work hours.
+- **Usability**: Provide an easy-to-use interface for both employees and administrators.
+- **Compliance**: Ensure alignment with labor regulations for accurate work hour tracking.
+
+---
+
+### ✨ **Features**
 
 - **Employee Management**: CRUD operations for managing employee records.
 - **Digital Point Tracking**: Real-time recording of employee entry, break, and exit times.
 - **Responsive Web App**: Accessible from both desktop and mobile devices.
 - **Data Integrity & Security**: Secure handling of employee personal data.
 - **System Time Logs**: Entry and exit times, lunch break times, and other time log data are now automatically populated with the system's current time if not provided by the user. This ensures that logs are always timestamped with accurate data.
+- **Reports & Analytics**: Generate reports on employee attendance and work hours.
+- **Export Data**: Allow export of employee records and work hours to XLSX.
 
-### **How to Run the Application**
+---
+
+### 🚀 **How to Run the Application**
 
 1. Make sure you have Go installed on your system (version 1.23.3 or higher).
 2. Clone the repository to your local machine.
@@ -29,6 +58,8 @@ go run main.go
 
 5. The application will be available on Unifil for now and it will run locally
 6. The login page will be automatically loaded in your browser.
+
+---
 
 ### **API Endpoints**
 
@@ -94,9 +125,9 @@ The backend API provides the following routes for interacting with the employee 
 
 ---
 
-## **Data Structure**
+## 📁 **Data Structure**
 
-The **Employee** entity follows the structure below:
+The 👥 **Employee** entity follows the structure below:
 
 | **Field** | **Type** | **Description** |
 | --- | --- | --- |
@@ -109,7 +140,7 @@ The **Employee** entity follows the structure below:
 | `workload` | `float32` | Weekly work hours |
 | `IsManager` | `boolean` | Determine the manager to assign the appropriate privileges. |
 
-The **TimeLog** entity structure:
+The 🕒 **TimeLog** entity structure:
 
 | **Field** | **Type** | **Description** |
 | --- | --- | --- |
@@ -124,35 +155,7 @@ The **TimeLog** entity structure:
 
 ---
 
-## **Technologies Used**
+##  👨‍💻 **Author**
 
-- **Frontend**: HTML, CSS, JavaScript (for user interface and interactivity)
-- **Backend**: Golang (Go) (for API and business logic)
-- **Database**: SQLite
-- **Version Control**: Git and GitHub (for code versioning and collaboration)
-
-## **How the Application Works**
-
-1. **Employee Registration**: Admins can create, view, update, and delete employee records via the web app.
-2. **Digital Point Tracking**: Employees register their entry, break, and exit times through an intuitive web interface. If no times are provided, the system automatically populates them with the current date and time.
-3. **Data Management**: All actions are processed through a secure RESTful API, with the backend handling all data validation and storage.
-
----
-
-## **Project Goals**
-
-- **Efficiency**: Reduce manual processes for tracking employee work hours.
-- **Usability**: Provide an easy-to-use interface for both employees and administrators.
-- **Compliance**: Ensure alignment with labor regulations for accurate work hour tracking.
-
----
-
-
-
-## **Project News**
-
-- **Reports & Analytics**: Generate reports on employee attendance and work hours.
-- **Export Data**: Allow export of employee records and work hours to XLSX.
-
-## **Future Improvements**
-- **Notifications**: Email or SMS notifications for employees and administrators.
+- Developed by @MWismeck® 🤟 
+If you like the project, leave a ⭐ in the repository!

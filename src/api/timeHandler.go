@@ -182,7 +182,7 @@ func (api *API) punchTime(c echo.Context) error {
 
 
 
-// CalculateHours calculates extra hours, missing hours, and balance based on time logs and workload
+
 func (api *API) CalculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTime time.Time, workload float32) (extraHours, missingHours, balance float32) {
 	// Check if all time fields are filled
 	if entryTime.IsZero() || lunchExitTime.IsZero() || lunchReturnTime.IsZero() || exitTime.IsZero() {
@@ -196,13 +196,13 @@ func (api *API) CalculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTi
 		log.Warn().Msg("Workload not set or too small, using default of 40 hours per week")
 	}
 	
-	// Convert weekly workload to daily workload by dividing by 7
+	
 	dailyWorkload := workload / 7
 	
-	// Calculate worked duration: exit time - entry time - lunch duration
+	
 	workedDuration := exitTime.Sub(entryTime) - (lunchReturnTime.Sub(lunchExitTime))
 	
-	// Convert duration to hours
+	
 	workedHours := float32(workedDuration.Hours())
 	
 	// Log the calculation details for debugging
@@ -332,7 +332,7 @@ func (api *API) exportToExcel(c echo.Context) error {
         f.SetCellValue(sheetName, fmt.Sprintf("H%d", row), fmt.Sprintf("%.2f", log.Balance))
     }
 
-    // Apply some styling
+    
     styleHeader, err := f.NewStyle(&excelize.Style{
         Font: &excelize.Font{Bold: true, Size: 12},
         Fill: excelize.Fill{Type: "pattern", Color: []string{"#C6EFCE"}, Pattern: 1},
