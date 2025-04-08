@@ -105,9 +105,15 @@ func (api *API) punchTime(c echo.Context) error {
         return c.String(http.StatusBadRequest, "Employee email is required")
     }
 
-    
-    currentDate := time.Now().Truncate(24 * time.Hour)
+    // Get the current date and time
+    now := time.Now()
+    currentDate := now.Truncate(24 * time.Hour)
 
+    // Log the current date for debugging
+    log.Info().
+        Str("currentDate", currentDate.Format("2006-01-02")).
+        Str("currentTime", now.Format("15:04:05")).
+        Msg("Current date and time")
     
     var timeLog schemas.TimeLog
     if err := api.DB.DB.Where("employee_email = ? AND log_date = ?", employeeEmail, currentDate).First(&timeLog).Error; err != nil {
@@ -116,7 +122,7 @@ func (api *API) punchTime(c echo.Context) error {
             timeLog = schemas.TimeLog{
                 EmployeeEmail: employeeEmail,
                 LogDate:       currentDate,
-                EntryTime:     time.Now(),
+                EntryTime:     now,
             }
             if err := api.DB.DB.Create(&timeLog).Error; err != nil {
                 log.Error().Err(err).Msg("Failed to create time log")
@@ -130,7 +136,7 @@ func (api *API) punchTime(c echo.Context) error {
     }
 
     
-    now := time.Now()
+    // Use the same 'now' variable
     if timeLog.EntryTime.IsZero() {
         timeLog.EntryTime = now
     } else if timeLog.LunchExitTime.IsZero() {
