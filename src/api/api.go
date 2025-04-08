@@ -71,6 +71,9 @@ func (api *API) startPeriodicTasks() {
 
 	
 	api.setupNewDay()
+	
+	// Recalculate hours for existing time logs
+	api.recalculateHoursForExistingLogs()
 
 	for {
 		select {
@@ -78,6 +81,75 @@ func (api *API) startPeriodicTasks() {
 			api.setupNewDay()
 		}
 	}
+}
+
+// recalculateHoursForExistingLogs recalculates extra hours, missing hours, and balance
+// for all existing time logs that have all time fields filled
+func (api *API) recalculateHoursForExistingLogs() {
+	var timeLogs []schemas.TimeLog
+	
+	// Find all time logs that have all time fields filled
+	if err := api.DB.DB.Where(
+		"entry_time != ? AND lunch_exit_time != ? AND lunch_return_time != ? AND exit_time != ?", 
+		time.Time{}, time.Time{}, time.Time{}, time.Time{}).Find(&timeLogs).Error; err != nil {
+		log.Error().Err(err).Msg("Failed to retrieve time logs for recalculation")
+		return
+	}
+	
+	log.Info().Msgf("Found %d time logs to recalculate", len(timeLogs))
+	
+	for _, timeLog := range timeLogs {
+		// Get employee workload
+		var employee schemas.Employee
+		if err := api.DB.DB.Where("email = ?", timeLog.EmployeeEmail).First(&employee).Error; err != nil {
+			log.Error().Err(err).Msgf("Failed to retrieve employee for time log ID %d", timeLog.ID)
+			
+			// If employee not found, use a default workload of 40 hours
+			employee.Workload = 40.0
+			log.Warn().Msgf("Employee not found for time log ID %d, using default workload of 40 hours", timeLog.ID)
+		}
+		
+		// If workload is not set, use a default of 40 hours
+		if employee.Workload < 0.1 {
+			employee.Workload = 40.0
+			log.Warn().Msgf("Workload not set for employee %s, using default of 40 hours", timeLog.EmployeeEmail)
+		}
+		
+		// Calculate extra hours, missing hours, and balance
+		extraHours, missingHours, balance := api.CalculateHours(
+			timeLog.EntryTime, 
+			timeLog.LunchExitTime, 
+			timeLog.LunchReturnTime, 
+			timeLog.ExitTime, 
+			employee.Workload,
+		)
+		
+		// Log the time log details
+		log.Info().
+			Int("timeLogID", timeLog.ID).
+			Str("employeeEmail", timeLog.EmployeeEmail).
+			Str("logDate", timeLog.LogDate.Format("2006-01-02")).
+			Float32("workload", employee.Workload).
+			Float32("dailyWorkload", employee.Workload/7).
+			Float32("extraHours", extraHours).
+			Float32("missingHours", missingHours).
+			Float32("balance", balance).
+			Msg("Recalculating hours for time log")
+		
+		// Update the time log with calculated values
+		timeLog.ExtraHours = extraHours
+		timeLog.MissingHours = missingHours
+		timeLog.Balance = balance
+		
+		// Save the updated time log
+		if err := api.DB.DB.Save(&timeLog).Error; err != nil {
+			log.Error().Err(err).Msgf("Failed to update time log ID %d", timeLog.ID)
+		} else {
+			log.Info().Msgf("Successfully updated time log ID %d", timeLog.ID)
+		}
+	}
+	
+	log.Info().Msg("Finished recalculating hours for existing time logs")
 }
 
 
@@ -94,13 +166,21 @@ func (api *API) setupNewDay() {
 
 	
 	for _, id := range employeeIDs {
+		// Get the employee email from the ID
+		var employee schemas.Employee
+		if err := api.DB.DB.First(&employee, id).Error; err != nil {
+			log.Error().Err(err).Msgf("Failed to find employee with ID %d", id)
+			continue
+		}
+		
 		newLog := schemas.TimeLog{
 			ID : id,
-			LogDate:    currentDate,
+			EmployeeEmail: employee.Email,
+			LogDate: currentDate,
 		}
 
 		
-		err := api.DB.DB.Where("employee_id = ? AND log_date = ?", id, currentDate).
+		err := api.DB.DB.Where("employee_email = ? AND log_date = ?", employee.Email, currentDate).
 			FirstOrCreate(&newLog).Error
 		if err != nil {
 			log.Error().Err(err).Msgf("Failed to create new log for employee %d", id)
@@ -122,9 +202,9 @@ func (api *API) ConfigureRoutes() {
 	//  Routes time registration
 
 
-	api.Echo.POST("/time_logs/", api.createTimeLog) 
+	api.Echo.POST("/time_logs", api.createTimeLog) 
 	api.Echo.PUT("/time_logs/:id", api.punchTime) 
-	api.Echo.GET("/time_logs/", api.getTimeLogs) 
+	api.Echo.GET("/time_logs", api.getTimeLogs) 
 	api.Echo.GET("/time_logs/export", api.exportToExcel) 
 	api.Echo.DELETE("/time_logs/:id", api.deleteTimeLog) 
 

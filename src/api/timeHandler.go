@@ -139,6 +139,26 @@ func (api *API) punchTime(c echo.Context) error {
         timeLog.LunchReturnTime = now
     } else if timeLog.ExitTime.IsZero() {
         timeLog.ExitTime = now
+        
+        // Get employee workload to calculate hours
+        var employee schemas.Employee
+        if err := api.DB.DB.Where("email = ?", employeeEmail).First(&employee).Error; err != nil {
+            log.Error().Err(err).Msg("Failed to retrieve employee for workload calculation")
+        } else {
+            // Calculate extra hours, missing hours, and balance
+            extraHours, missingHours, balance := api.CalculateHours(
+                timeLog.EntryTime, 
+                timeLog.LunchExitTime, 
+                timeLog.LunchReturnTime, 
+                timeLog.ExitTime, 
+                employee.Workload,
+            )
+            
+            // Update the time log with calculated values
+            timeLog.ExtraHours = extraHours
+            timeLog.MissingHours = missingHours
+            timeLog.Balance = balance
+        }
     } else {
         log.Warn().Msgf("All time log fields are already filled for employee %s", employeeEmail)
         return c.String(http.StatusBadRequest, "All time log fields are already filled for today")
@@ -156,24 +176,62 @@ func (api *API) punchTime(c echo.Context) error {
 
 
 
-func calculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTime time.Time, workload float32) (extraHours, missingHours, balance float32) {
-	
-	workedDuration := exitTime.Sub(entryTime) - (lunchReturnTime.Sub(lunchExitTime))
-
-	
-	workedHours := float32(workedDuration.Hours())
-
-	
-	if workedHours > workload {
-		extraHours = workedHours - workload
-		missingHours = 0
-	} else {
-		extraHours = 0
-		missingHours = workload - workedHours
+// CalculateHours calculates extra hours, missing hours, and balance based on time logs and workload
+func (api *API) CalculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTime time.Time, workload float32) (extraHours, missingHours, balance float32) {
+	// Check if all time fields are filled
+	if entryTime.IsZero() || lunchExitTime.IsZero() || lunchReturnTime.IsZero() || exitTime.IsZero() {
+		// Return zeros if any time field is not filled
+		return 0, 0, 0
 	}
-
 	
+	// If workload is not set (0 or very small), use a default of 40 hours per week
+	if workload < 0.1 {
+		workload = 40.0
+		log.Warn().Msg("Workload not set or too small, using default of 40 hours per week")
+	}
+	
+	// Convert weekly workload to daily workload by dividing by 7
+	dailyWorkload := workload / 7
+	
+	// Calculate worked duration: exit time - entry time - lunch duration
+	workedDuration := exitTime.Sub(entryTime) - (lunchReturnTime.Sub(lunchExitTime))
+	
+	// Convert duration to hours
+	workedHours := float32(workedDuration.Hours())
+	
+	// Log the calculation details for debugging
+	log.Info().
+		Float32("workload", workload).
+		Float32("dailyWorkload", dailyWorkload).
+		Float32("workedHours", workedHours).
+		Str("entryTime", entryTime.Format(time.RFC3339)).
+		Str("lunchExitTime", lunchExitTime.Format(time.RFC3339)).
+		Str("lunchReturnTime", lunchReturnTime.Format(time.RFC3339)).
+		Str("exitTime", exitTime.Format(time.RFC3339)).
+		Msg("Calculating hours")
+	
+	// Calculate extra or missing hours based on daily workload
+	// If worked hours is greater than daily workload, then there are extra hours
+	// Otherwise, there are missing hours
+	extraHours = 0
+	missingHours = 0
+	
+	if workedHours > dailyWorkload {
+		extraHours = workedHours - dailyWorkload
+	} else {
+		missingHours = dailyWorkload - workedHours
+	}
+	
+	// Calculate balance (can be positive or negative)
 	balance = extraHours - missingHours
+	
+	// Log the calculation results
+	log.Info().
+		Float32("extraHours", extraHours).
+		Float32("missingHours", missingHours).
+		Float32("balance", balance).
+		Msg("Calculation results")
+	
 	return
 }
 

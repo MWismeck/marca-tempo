@@ -6,7 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Ponto</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead th:first-child {
+            border-top-left-radius: 10px;
+        }
+        .table thead th:last-child {
+            border-top-right-radius: 10px;
+        }
+        .table tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 10px;
+        }
+        .table tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 10px;
+        }
+    </style>
 </head>
 
 <body>
@@ -14,9 +33,23 @@
         <h1 class="mb-4">Registro de Ponto</h1>
         
         <div class="row mb-4">
-            <div class="col">
-                <button id="register-time-btn" class="btn btn-primary">Registrar Ponto</button>
-                <button id="export-excel-btn" class="btn btn-success ms-2">Exportar para Excel</button>
+            <div class="col d-flex justify-content-between align-items-center">
+                <div>
+                    <button id="register-time-btn" class="btn btn-primary btn-lg">Registrar Ponto</button>
+                </div>
+                <div>
+                    <button id="export-excel-btn" class="btn btn-success me-2">
+                        <i class="bi bi-file-excel"></i> Exportar
+                    </button>
+                    <button id="problems-btn" class="btn btn-warning me-2">
+                        <i class="bi bi-whatsapp"></i> Suporte
+                    </button>
+                    <button id="exit-btn" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Sair
+                    </button>
+                </div>
+            </div>
+            <div class="col-12">
                 <div id="status-message" class="mt-2"></div>
             </div>
         </div>
@@ -24,8 +57,9 @@
         <div class="row">
             <div class="col">
                 <h2>Meus Registros</h2>
+                <div id="employee-name" class="mb-3"></div>
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-hover bg-white">
                         <thead class="table-dark">
                             <tr>
                                 <th>Data</th>
@@ -33,8 +67,6 @@
                                 <th>Saída Almoço</th>
                                 <th>Retorno Almoço</th>
                                 <th>Saída</th>
-                                <th>Horas Extras</th>
-                                <th>Horas Faltantes</th>
                                 <th>Saldo</th>
                             </tr>
                         </thead>

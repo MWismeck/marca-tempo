@@ -13,18 +13,46 @@ function showStatusMessage(message, isError = false) {
 
 // Função para formatar data e hora
 function formatDateTime(dateTimeStr) {
+    // Check for null, undefined, or invalid date
     if (!dateTimeStr || new Date(dateTimeStr).toString() === 'Invalid Date') {
         return '---';
     }
-    return new Date(dateTimeStr).toLocaleString('pt-BR');
+    
+    // Check for zero time (0001-01-01) which is Go's default time value
+    if (dateTimeStr.includes('0001-01-01') || dateTimeStr.includes('01/01/0001')) {
+        return '---';
+    }
+    
+    // Check for very old dates that might be default values (before 2000)
+    const date = new Date(dateTimeStr);
+    if (date.getFullYear() < 2000) {
+        return '---';
+    }
+    
+    return date.toLocaleString('pt-BR');
 }
 
 // Função para formatar apenas a data
 function formatDate(dateTimeStr) {
+    // Check for null, undefined, or invalid date
     if (!dateTimeStr || new Date(dateTimeStr).toString() === 'Invalid Date') {
         return '---';
     }
-    return new Date(dateTimeStr).toLocaleDateString('pt-BR');
+    
+    // Check for zero time (0001-01-01) which is Go's default time value
+    if (dateTimeStr.includes('0001-01-01') || dateTimeStr.includes('01/01/0001')) {
+        return '---';
+    }
+    
+    // Check for very old dates that might be default values (before 2000)
+    const date = new Date(dateTimeStr);
+    if (date.getFullYear() < 2000) {
+        return '---';
+    }
+    
+    // Format the date as DD/MM/YYYY (day/month/year)
+    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    return date.toLocaleDateString('pt-BR', options);
 }
 
 // Função para formatar horas
@@ -115,15 +143,13 @@ async function fetchTimeLogs() {
                     <td>${formatDateTime(log.lunch_exit_time)}</td>
                     <td>${formatDateTime(log.lunch_return_time)}</td>
                     <td>${formatDateTime(log.exit_time)}</td>
-                    <td>${formatHours(log.extra_hours)}</td>
-                    <td>${formatHours(log.missing_hours)}</td>
-                    <td class="${log.balance >= 0 ? 'text-success' : 'text-danger'}">${formatHours(log.balance)}</td>
+                    <td class="${log.balance >= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatHours(log.balance)}</td>
                 </tr>
             `).join('');
         } else {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center">Nenhum registro de ponto encontrado</td>
+                    <td colspan="6" class="text-center">Nenhum registro de ponto encontrado</td>
                 </tr>
             `;
         }
@@ -140,15 +166,16 @@ async function fetchTimeLogs() {
         const tableBody = document.getElementById('time-logs-table-body');
         tableBody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center text-danger">Erro ao carregar registros</td>
+                <td colspan="6" class="text-center text-danger">Erro ao carregar registros</td>
             </tr>
         `;
     }
 }
 
-// Verifica se o usuário está autenticado
+// Verifica se o usuário está autenticado e exibe o nome do funcionário
 function checkAuthentication() {
     const employeeEmail = localStorage.getItem('employee_email');
+    const employeeName = localStorage.getItem('employee_name');
     
     if (!employeeEmail) {
         showStatusMessage('Você precisa fazer login para acessar esta página.', true);
@@ -156,6 +183,13 @@ function checkAuthentication() {
             window.location.href = 'index.html';
         }, 2000);
         return false;
+    }
+    
+    // Exibe o nome do funcionário se disponível
+    if (employeeName) {
+        const employeeNameElement = document.getElementById('employee-name');
+        employeeNameElement.textContent = `Funcionário: ${employeeName}`;
+        employeeNameElement.className = 'fs-5 fw-bold';
     }
     
     return true;
@@ -191,6 +225,22 @@ document.getElementById('export-excel-btn').addEventListener('click', async () =
         console.error('Erro ao exportar para Excel:', error);
         showStatusMessage('Erro ao exportar registros para Excel.', true);
     }
+});
+
+// Botão de sair
+document.getElementById('exit-btn').addEventListener('click', () => {
+    // Limpa o localStorage e redireciona para a página de login
+    localStorage.removeItem('employee_email');
+    window.location.href = 'index.html';
+});
+
+// Botão de problemas
+document.getElementById('problems-btn').addEventListener('click', () => {
+    // Redireciona para o WhatsApp
+    const phoneNumber = '5511999999999'; // Substitua pelo número correto
+    const message = 'Olá, estou com problemas no sistema de registro de ponto.';
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
 });
 
 // Inicialização da página

@@ -92,9 +92,19 @@ func (e *EmployeeHandler) UpdateExitTime(timeLogID uint, exitTime time.Time) err
 
 
 func (e *EmployeeHandler) GetTimeLogsByEmployeeID(employeeID uint) ([]schemas.TimeLog, error) {
+	// First get the employee to find their email
+	var employee schemas.Employee
+	if err := e.DB.First(&employee, employeeID).Error; err != nil {
+		return nil, err
+	}
+	
 	var timeLogs []schemas.TimeLog
-	err := e.DB.Where("employee_email = ?", employeeID).Find(&timeLogs).Error
+	err := e.DB.Where("employee_email = ?", employee.Email).Find(&timeLogs).Error
 	return timeLogs, err
 }
 
-
+func (e *EmployeeHandler) GetTimeLogsByEmail(email string) ([]schemas.TimeLog, error) {
+	var timeLogs []schemas.TimeLog
+	err := e.DB.Where("employee_email = ?", email).Find(&timeLogs).Error
+	return timeLogs, err
+}
