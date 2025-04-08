@@ -27,7 +27,7 @@ The project aims to provide an intuitive experience for employers and administra
 go run main.go
 ```
 
-5. The application will be available at http://localhost:8080
+5. The application will be available on Unifil for now and it will run locally
 6. The login page will be automatically loaded in your browser.
 
 ### **API Endpoints**
@@ -147,9 +147,12 @@ The **TimeLog** entity structure:
 
 ---
 
-## **Future Improvements**
 
-- **Authentication & Authorization**: Implement user roles (e.g., admin, employee) to restrict access to certain features.
+
+## **Project News**
+
 - **Reports & Analytics**: Generate reports on employee attendance and work hours.
+- **Export Data**: Allow export of employee records and work hours to XLSX.
+
+## **Future Improvements**
 - **Notifications**: Email or SMS notifications for employees and administrators.
-- **Export Data**: Allow export of employee records and work hours to CSV or PDF.
