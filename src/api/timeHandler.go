@@ -105,9 +105,11 @@ func (api *API) punchTime(c echo.Context) error {
         return c.String(http.StatusBadRequest, "Employee email is required")
     }
 
-    // Get the current date and time
+    // Get the current date and time in local timezone
     now := time.Now()
-    currentDate := now.Truncate(24 * time.Hour)
+    // Create a date that represents today at midnight in the local timezone
+    year, month, day := now.Date()
+    currentDate := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
 
     // Log the current date for debugging
     log.Info().
