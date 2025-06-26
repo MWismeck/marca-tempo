@@ -249,3 +249,30 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchTimeLogs();
     }
 });
+
+const requestModal = new bootstrap.Modal(document.getElementById("requestModal"));
+document.getElementById("btn-request-edit").addEventListener("click", () => {
+  requestModal.show();
+});
+
+document.getElementById("form-request-edit").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = localStorage.getItem("employee_email");
+  const date = document.getElementById("request-date").value;
+  const reason = document.getElementById("request-reason").value;
+
+  try {
+    await axios.post("/employee/request_change", {
+      funcionario_email: email,
+      data_solicitada: date,
+      motivo: reason
+    }, { headers: { "X-User-Role": "employee" } });
+
+    alert("Solicitação enviada com sucesso!");
+    requestModal.hide();
+  } catch (err) {
+    alert("Erro ao enviar solicitação.");
+    console.error(err);
+  }
+});
+

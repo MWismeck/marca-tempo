@@ -406,3 +406,134 @@ func (api *API) deleteTimeLog(c echo.Context) error {
 
 	return c.String(http.StatusOK, "Time log deleted")
 }
+
+func (api *API) editTimeLogByManager(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, "ID inválido")
+	}
+
+	var updateData schemas.TimeLog
+	if err := c.Bind(&updateData); err != nil {
+		return c.JSON(http.StatusBadRequest, "Dados inválidos")
+	}
+
+	var timeLog schemas.TimeLog
+	if err := api.DB.DB.First(&timeLog, id).Error; err != nil {
+		return c.JSON(http.StatusNotFound, "Registro não encontrado")
+	}
+
+	// Atualiza apenas os campos enviados
+	if !updateData.EntryTime.IsZero() {
+		timeLog.EntryTime = updateData.EntryTime
+	}
+	if !updateData.LunchExitTime.IsZero() {
+		timeLog.LunchExitTime = updateData.LunchExitTime
+	}
+	if !updateData.LunchReturnTime.IsZero() {
+		timeLog.LunchReturnTime = updateData.LunchReturnTime
+	}
+	if !updateData.ExitTime.IsZero() {
+		timeLog.ExitTime = updateData.ExitTime
+	}
+
+	// Marca edição do gerente
+	timeLog.EditadoPorGerente = updateData.EditadoPorGerente
+	timeLog.EditadoEm = time.Now()
+
+	if err := api.DB.DB.Save(&timeLog).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, "Erro ao salvar")
+	}
+
+	return c.JSON(http.StatusOK, timeLog)
+}
+
+func (api *API) requestTimeEdit(c echo.Context) error {
+	var req schemas.PontoSolicitacao
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
+	}
+
+	if req.FuncionarioEmail == "" || req.Motivo == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email e motivo são obrigatórios"})
+	}
+
+	if err := api.DB.DB.Create(&req).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao salvar solicitação"})
+	}
+
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Solicitação registrada com sucesso"})
+}
+
+func (api *API) exportTimeLogsRange(c echo.Context) error {
+	email := c.QueryParam("employee_email")
+	startStr := c.QueryParam("start")
+	endStr := c.QueryParam("end")
+
+	if email == "" || startStr == "" || endStr == "" {
+		return c.String(http.StatusBadRequest, "Parâmetros obrigatórios: employee_email, start, end")
+	}
+
+	start, err1 := time.Parse("2006-01-02", startStr)
+	end, err2 := time.Parse("2006-01-02", endStr)
+	if err1 != nil || err2 != nil {
+		return c.String(http.StatusBadRequest, "Formato de data inválido")
+	}
+
+	// Inclui o final do dia na data final
+	end = end.Add(24 * time.Hour)
+
+	var employee schemas.Employee
+	if err := api.DB.DB.Where("email = ?", email).First(&employee).Error; err != nil {
+		return c.String(http.StatusBadRequest, "Funcionário não encontrado")
+	}
+
+	var timeLogs []schemas.TimeLog
+	if err := api.DB.DB.
+		Where("employee_email = ? AND log_date BETWEEN ? AND ?", email, start, end).
+		Order("log_date").
+		Find(&timeLogs).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Erro ao buscar registros")
+	}
+
+	if len(timeLogs) == 0 {
+		return c.String(http.StatusNotFound, "Nenhum registro no período selecionado")
+	}
+
+	// Geração Excel (mesma lógica do exportToExcel original)
+	f := excelize.NewFile()
+	defer f.Close()
+
+	sheet := "Período"
+	f.NewSheet(sheet)
+	f.SetActiveSheet(f.GetSheetIndex(sheet))
+
+	headers := []string{"Data", "Entrada", "Saída Almoço", "Retorno", "Saída", "Extras", "Faltantes", "Saldo"}
+	for i, h := range headers {
+		f.SetCellValue(sheet, fmt.Sprintf("%c1", 'A'+i), h)
+	}
+
+	for i, log := range timeLogs {
+		row := i + 2
+		f.SetCellValue(sheet, fmt.Sprintf("A%d", row), log.LogDate.Format("02/01/2006"))
+		f.SetCellValue(sheet, fmt.Sprintf("B%d", row), log.EntryTime.Format("15:04"))
+		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), log.LunchExitTime.Format("15:04"))
+		f.SetCellValue(sheet, fmt.Sprintf("D%d", row), log.LunchReturnTime.Format("15:04"))
+		f.SetCellValue(sheet, fmt.Sprintf("E%d", row), log.ExitTime.Format("15:04"))
+		f.SetCellValue(sheet, fmt.Sprintf("F%d", row), log.ExtraHours)
+		f.SetCellValue(sheet, fmt.Sprintf("G%d", row), log.MissingHours)
+		f.SetCellValue(sheet, fmt.Sprintf("H%d", row), log.Balance)
+	}
+
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Erro ao gerar planilha")
+	}
+
+	filename := fmt.Sprintf("Relatorio_%s_%s.xlsx", employee.Name, time.Now().Format("200601021504"))
+	c.Response().Header().Set("Content-Disposition", "attachment; filename="+filename)
+	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
+}
+
+

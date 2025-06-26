@@ -17,7 +17,13 @@ func Init() *gorm.DB {
 	if err != nil {
 		log.Fatal().Err(err).Msgf("Failed to initialize SQLite: %s", err.Error())
 	}
-	db.AutoMigrate(&schemas.Employee{}, &schemas.Login{}, &schemas.TimeLog{})
+	db.AutoMigrate(
+	&schemas.Employee{},
+	&schemas.Login{},
+	&schemas.TimeLog{},
+	&schemas.Company{},
+	&schemas.PontoSolicitacao{}, 
+)
 	return db
 }
 
@@ -92,7 +98,7 @@ func (e *EmployeeHandler) UpdateExitTime(timeLogID uint, exitTime time.Time) err
 
 
 func (e *EmployeeHandler) GetTimeLogsByEmployeeID(employeeID uint) ([]schemas.TimeLog, error) {
-	// First get the employee to find their email
+	
 	var employee schemas.Employee
 	if err := e.DB.First(&employee, employeeID).Error; err != nil {
 		return nil, err

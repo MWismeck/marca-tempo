@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel do Gerente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+</head>
+<body class="bg-light">
+<div class="container my-4">
+  <h1 class="text-primary mb-4">Painel do Gerente</h1>
+
+  <!-- Botões principais -->
+  <div class="mb-3 d-flex justify-content-between">
+    <button class="btn btn-outline-success" id="btn-export-range">Exportar por Período</button>
+    <button class="btn btn-outline-danger" id="btn-logout">Sair</button>
+  </div>
+
+  <!-- Tabela de funcionários -->
+  <div class="card">
+    <div class="card-header bg-success text-white">Funcionários da Empresa</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover bg-white">
+          <thead class="table-success">
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Editar Ponto</th>
+            </tr>
+          </thead>
+          <tbody id="employee-list">
+            <tr><td colspan="3" class="text-center">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edição -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="edit-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Registros de Ponto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="edit-fields" class="row g-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  const employeeList = document.getElementById("employee-list");
+  const editFields = document.getElementById("edit-fields");
+  const modal = new bootstrap.Modal(document.getElementById("editModal"));
+  let logsCache = [];
+  let currentEmail = "";
+  const managerName = localStorage.getItem("employee_name");
+
+  function formatInput(label, value, name) {
+    const val = value ? new Date(value).toISOString().slice(0, 16) : "";
+    return `
+      <div class="col-md-6">
+        <label>${label}</label>
+        <input type="datetime-local" class="form-control" name="${name}" value="${val}">
+      </div>
+    `;
+  }
+
+  async function fetchEmployees() {
+    try {
+      const email = localStorage.getItem("employee_email");
+      const res = await axios.get(`/employees?active=true`, {
+        headers: { "X-User-Role": "manager" }
+      });
+      const employees = res.data["employees:"] || [];
+
+      employeeList.innerHTML = employees.map(emp => `
+        <tr>
+          <td>${emp.name}</td>
+          <td>${emp.email}</td>
+          <td><button class="btn btn-sm btn-primary" onclick="editLogs('${emp.email}')">Editar</button></td>
+        </tr>
+      `).join("");
+    } catch (err) {
+      console.error(err);
+      employeeList.innerHTML = "<tr><td colspan='3'>Erro ao carregar.</td></tr>";
+    }
+  }
+
+  async function editLogs(email) {
+    currentEmail = email;
+    try {
+      const res = await axios.get(`/time_logs?employee_email=${email}`);
+      logsCache = res.data;
+
+      if (!logsCache.length) return alert("Sem registros!");
+
+      const latest = logsCache[0]; // Mais recente
+      editFields.innerHTML = `
+        ${formatInput("Entrada", latest.entry_time, "entry_time")}
+        ${formatInput("Saída Almoço", latest.lunch_exit_time, "lunch_exit_time")}
+        ${formatInput("Retorno Almoço", latest.lunch_return_time, "lunch_return_time")}
+        ${formatInput("Saída", latest.exit_time, "exit_time")}
+      `;
+      modal.show();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao buscar registros.");
+    }
+  }
+
+  document.getElementById("edit-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const inputs = e.target.elements;
+    const body = {
+      entry_time: inputs.entry_time.value,
+      lunch_exit_time: inputs.lunch_exit_time.value,
+      lunch_return_time: inputs.lunch_return_time.value,
+      exit_time: inputs.exit_time.value,
+      editado_por_gerente: managerName,
+      editado_em: new Date().toISOString()
+    };
+
+    try {
+      const id = logsCache[0].id;
+      await axios.put(`/time_logs/${id}`, body);
+      alert("Alterações salvas!");
+      modal.hide();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao salvar.");
+    }
+  });
+
+  document.getElementById("btn-export").addEventListener("click", () => {
+    const email = localStorage.getItem("employee_email");
+    window.open(`/time_logs/export?employee_email=${encodeURIComponent(email)}`, "_blank");
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "index.html";
+  });
+
+  fetchEmployees();
+</script>
+<div class="modal fade" id="exportModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form class="modal-content" id="form-export">
+      <div class="modal-header">
+        <h5 class="modal-title">Exportar Período</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label>Funcionário Email</label>
+        <input type="email" class="form-control" id="export-email" required>
+        <label class="mt-2">Data Início</label>
+        <input type="date" class="form-control" id="export-start" required>
+        <label class="mt-2">Data Fim</label>
+        <input type="date" class="form-control" id="export-end" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Gerar Planilha</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

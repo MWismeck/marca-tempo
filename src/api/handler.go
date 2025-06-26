@@ -225,11 +225,22 @@ func (api *API) login(c echo.Context) error {
     }
 
     return c.JSON(http.StatusOK, map[string]interface{}{
-        "message":        "Login successful",
-        "employee_id":    employee.ID,
-        "employee_email": employee.Email,
-        "employee_name":  employee.Name,
-    })
+    "message":        "Login successful",
+    "employee_id":    employee.ID,
+    "employee_email": employee.Email,
+    "employee_name":  employee.Name,
+    "role": func() string {
+        switch {
+        case employee.IsAdmin:
+            return "admin"
+        case employee.IsManager:
+            return "manager"
+        default:
+            return "employee"
+        }
+    }(),
+})
+
 }
 
 
@@ -278,3 +289,62 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }
+
+func (api *API) createCompany(c echo.Context) error {
+	var company schemas.Company
+	if err := c.Bind(&company); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
+	}
+
+	if err := api.DB.DB.Create(&company).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao criar empresa"})
+	}
+
+	return c.JSON(http.StatusCreated, company)
+}
+
+func (api *API) listCompanies(c echo.Context) error {
+	var companies []schemas.Company
+	if err := api.DB.DB.Preload("Employees").Find(&companies).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao listar empresas"})
+	}
+	return c.JSON(http.StatusOK, companies)
+}
+
+func (api *API) createManager(c echo.Context) error {
+	var req EmployeeRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
+	}
+	if err := req.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Erro de validação: " + err.Error()})
+	}
+
+	manager := schemas.Employee{
+		Name:        req.Name,
+		Email:       req.Email,
+		CPF:         req.CPF,
+		RG:          req.RG,
+		Age:         req.Age,
+		Active:      *req.Active,
+		Workload:    req.Workload,
+		IsManager:   true,
+		IsAdmin:     false,
+		CompanyCNPJ: req.CompanyCNPJ,
+	}
+
+	if err := api.DB.DB.Create(&manager).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao cadastrar gerente"})
+	}
+
+	return c.JSON(http.StatusCreated, manager)
+}
+
+func (api *API) listManagers(c echo.Context) error {
+	var managers []schemas.Employee
+	if err := api.DB.DB.Where("is_manager = ?", true).Find(&managers).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar gerentes"})
+	}
+	return c.JSON(http.StatusOK, managers)
+}
+

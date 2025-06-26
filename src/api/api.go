@@ -10,8 +10,7 @@ import (
 	"github.com/swaggo/echo-swagger"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4/middleware"
-	
-	
+	"github.com/MWismeck/marca-tempo/src/middleware"
 )
 
 type API struct {
@@ -28,6 +27,8 @@ type API struct {
 func NewServer(database *gorm.DB) *API {
 
 	e := echo.New()
+	e.Use(middleware.Logger())
+    e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"http://localhost:8080", "http://127.0.0.1:8081", "http://127.0.0.1:5500"}, 
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},       
@@ -210,6 +211,23 @@ func (api *API) ConfigureRoutes() {
 
 	api.Echo.POST("/login", api.login)
 	api.Echo.POST("/login/password", api.createOrUpdatePassword)
+
+	api.Echo.GET("/admin", api.adminDashboard, middleware.RoleRequired("admin"))
+    api.Echo.GET("/manager", api.managerDashboard, middleware.RoleRequired("manager"))
+    api.Echo.GET("/employee", api.employeeDashboard, middleware.RoleRequired("employee"))
+	adminGroup := api.Echo.Group("/admin", middleware.RoleRequired("admin"))
+    adminGroup.POST("/create_company", api.createCompany)
+    adminGroup.GET("/companies", api.listCompanies)
+    adminGroup.POST("/create_manager", api.createManager)
+    adminGroup.GET("/managers", api.listManagers)
+	api.Echo.PUT("/time_logs/:id/manual_edit", api.editTimeLogByManager, middleware.RoleRequired("manager"))
+	api.Echo.POST("/employee/request_change", api.requestTimeEdit, middleware.RoleRequired("employee"))
+	api.Echo.GET("/time_logs/export_range", api.exportTimeLogsRange, middleware.RoleRequired("manager"))
+
+
+
+
+
 
 	api.Echo.GET("/time-registration.html", func(c echo.Context) error {
 		return c.File("public/time-registration.html")
