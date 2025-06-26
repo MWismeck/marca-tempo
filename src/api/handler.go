@@ -61,7 +61,14 @@ func (api *API) createEmployee(c echo.Context) error {
 	}
 	if err := employeeReq.Validate(); err != nil {
 		log.Error().Err(err).Msgf("[api] error validating struct")
-		return c.String(http.StatusBadRequest, "Error to validating employee")
+		return c.String(http.StatusBadRequest, "Error validating employee")
+	}
+
+	
+	var company schemas.Company
+	if err := api.DB.DB.Where("cnpj = ?", employeeReq.CompanyCNPJ).First(&company).Error; err != nil {
+		log.Warn().Str("cnpj", employeeReq.CompanyCNPJ).Msg("[api] CNPJ não encontrado")
+		return c.String(http.StatusBadRequest, "Empresa com este CNPJ não encontrada")
 	}
 
 	employee := schemas.Employee{
@@ -75,10 +82,12 @@ func (api *API) createEmployee(c echo.Context) error {
 	}
 
 	if err := api.DB.AddEmployee(employee); err != nil {
-		return c.String(http.StatusInternalServerError, "Error to create employee")
+		return c.String(http.StatusInternalServerError, "Erro ao criar funcionário")
 	}
+
 	return c.JSON(http.StatusOK, employee)
 }
+
 
 // getEmployeeId godoc
 //
