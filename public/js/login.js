@@ -28,9 +28,19 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
             document.getElementById('login-form').appendChild(messageElement);
 
             // Redireciona para a página de ponto após um breve delay
-            setTimeout(() => {
-                window.location.href = 'time-registration.html';
-            }, 1500);
+          if (response.data.role === "manager") {
+           const escolha = confirm("Você deseja acessar o painel do gerente?\nClique em 'Cancelar' para registrar ponto como funcionário.");
+           if (escolha) {
+             window.location.href = "manager.html";
+               } else {
+    window.location.href = "time-registration.html";
+                }
+         } else if (response.data.role === "admin") {
+  window.location.href = "admin.html";
+      } else {
+  window.location.href = "time-registration.html";
+                 }
+
         }
     } catch (err) {
         // Mostra mensagem de erro

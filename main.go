@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-
-
 func main() {
 	// Initialize the database
 	database := db.Init()
@@ -26,7 +24,6 @@ func main() {
 	// Wait a moment for the server to start
 	time.Sleep(1 * time.Second)
 
-	
 	// Keep the main goroutine running
 	select {}
 }

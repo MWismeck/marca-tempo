@@ -3,14 +3,15 @@ package api
 import "fmt"
 
 type EmployeeRequest struct {
-	Name     string  `json:"name"`
-	CPF      string  `json:"cpf"`
-	RG       string  `json:"rg"`
-	Email    string  `json:"email"`
-	Age      int     `json:"age"`
-	Active   *bool   `json:"active"` // using bool as a pointer to force true/false
-	Workload float32 `json:"workload"`
-	Password string  `json:"password"`
+	Name        string  `json:"name"`
+	CPF         string  `json:"cpf"`
+	RG          string  `json:"rg"`
+	Email       string  `json:"email"`
+	Age         int     `json:"age"`
+	Active      *bool   `json:"active"` // using bool as a pointer to force true/false
+	Workload    float32 `json:"workload"`
+	Password    string  `json:"password"`
+	CompanyCNPJ string  `json:"company_cnpj"`
 }
 
 func errParamRequired(param, typ string) error {

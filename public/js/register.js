@@ -21,7 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 email: document.getElementById('register-email').value,
                 age: parseInt(document.getElementById('register-age').value, 10),
                 workload: parseFloat(document.getElementById('register-workload').value),
-                active: document.getElementById('register-active').value === "true"
+                active: document.getElementById('register-active').value === "true",
+                company_cnpj: document.getElementById('register-cnpj').value
             };
 
             const password = document.getElementById('register-password').value;

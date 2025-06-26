@@ -2,15 +2,14 @@ package api
 
 import (
 	"errors"
-	_"github.com/MWismeck/marca-tempo/src/docs"
+	_ "github.com/MWismeck/marca-tempo/src/docs"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
-	"golang.org/x/crypto/bcrypt"
-	
 )
 
 // getEmployees godoc
@@ -66,12 +65,13 @@ func (api *API) createEmployee(c echo.Context) error {
 	}
 
 	employee := schemas.Employee{
-		Name:   employeeReq.Name,
-		Email:  employeeReq.Email,
-		CPF:    employeeReq.CPF,
-		RG:     employeeReq.RG,
-		Age:    employeeReq.Age,
-		Active: *employeeReq.Active,
+		Name:        employeeReq.Name,
+		Email:       employeeReq.Email,
+		CPF:         employeeReq.CPF,
+		RG:          employeeReq.RG,
+		Age:         employeeReq.Age,
+		Active:      *employeeReq.Active,
+		CompanyCNPJ: employeeReq.CompanyCNPJ,
 	}
 
 	if err := api.DB.AddEmployee(employee); err != nil {
@@ -197,58 +197,54 @@ func (api *API) deleteEmployee(c echo.Context) error {
 	return c.JSON(http.StatusOK, employee)
 }
 
-
-
 func (api *API) login(c echo.Context) error {
-    loginReq := struct {
-        Email    string `json:"email"`
-        Password string `json:"password"`
-    }{}
+	loginReq := struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{}
 
-    if err := c.Bind(&loginReq); err != nil {
-        return c.String(http.StatusBadRequest, "Invalid request")
-    }
+	if err := c.Bind(&loginReq); err != nil {
+		return c.String(http.StatusBadRequest, "Invalid request")
+	}
 
-    var login schemas.Login
-    if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&login).Error; err != nil {
-        return c.String(http.StatusUnauthorized, "Invalid email or password")
-    }
+	var login schemas.Login
+	if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&login).Error; err != nil {
+		return c.String(http.StatusUnauthorized, "Invalid email or password")
+	}
 
-    if !CheckPasswordHash(loginReq.Password, login.Password) {
-        return c.String(http.StatusUnauthorized, "Invalid email or password")
-    }
+	if !CheckPasswordHash(loginReq.Password, login.Password) {
+		return c.String(http.StatusUnauthorized, "Invalid email or password")
+	}
 
-    // Get employee details
-    var employee schemas.Employee
-    if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&employee).Error; err != nil {
-        return c.String(http.StatusInternalServerError, "Error retrieving employee details")
-    }
+	// Get employee details
+	var employee schemas.Employee
+	if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&employee).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Error retrieving employee details")
+	}
 
-    return c.JSON(http.StatusOK, map[string]interface{}{
-    "message":        "Login successful",
-    "employee_id":    employee.ID,
-    "employee_email": employee.Email,
-    "employee_name":  employee.Name,
-    "role": func() string {
-        switch {
-        case employee.IsAdmin:
-            return "admin"
-        case employee.IsManager:
-            return "manager"
-        default:
-            return "employee"
-        }
-    }(),
-})
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message":        "Login successful",
+		"employee_id":    employee.ID,
+		"employee_email": employee.Email,
+		"employee_name":  employee.Name,
+		"role": func() string {
+			switch {
+			case employee.IsAdmin:
+				return "admin"
+			case employee.IsManager:
+				return "manager"
+			default:
+				return "employee"
+			}
+		}(),
+	})
 
 }
-
 
 type PasswordRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
-
 
 func (api *API) createOrUpdatePassword(c echo.Context) error {
 	var req PasswordRequest
@@ -256,28 +252,25 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 	}
 
-	
 	var employee schemas.Employee
 	if err := api.DB.DB.Where("email = ?", req.Email).First(&employee).Error; err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Employee not found"})
 	}
 
-	
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
 	}
 
-	
 	var login schemas.Login
 	if err := api.DB.DB.Where("email = ?", req.Email).First(&login).Error; err == nil {
-		
+
 		login.Password = string(hashedPassword)
 		if err := api.DB.DB.Save(&login).Error; err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
 		}
 	} else {
-		
+
 		newLogin := schemas.Login{
 			Email:    req.Email,
 			Password: string(hashedPassword),
@@ -347,4 +340,3 @@ func (api *API) listManagers(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, managers)
 }
-
