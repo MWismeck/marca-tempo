@@ -37,12 +37,14 @@ type Company struct {
 	gorm.Model
 	Name      string     `json:"name"`
 	CNPJ      string     `json:"cnpj" gorm:"unique;not null"` // CNPJ como chave única
-	FtyName   string     `json:"fty_name"`
 	Email     string     `json:"email"`
 	Fone      string     `json:"fone"`
 	Active    bool       `json:"active"`
 	Employees []Employee `gorm:"foreignKey:CompanyCNPJ;references:CNPJ"` // One-to-many via CNPJ
 }
+
+
+
 type EmployeeResponse struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -103,3 +105,6 @@ type Login struct {
 	Email    string `json:"email" gorm:"type:varchar(255);unique;not null"`
 	Password string `json:"password" gorm:"not null"`
 }
+
+
+

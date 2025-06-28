@@ -199,9 +199,7 @@ func (api *API) ConfigureRoutes() {
 	api.Echo.POST("/login", api.login)
 	api.Echo.POST("/login/password", api.createOrUpdatePassword)
 
-	// api.Echo.GET("/admin", api.adminDashboard, middleware.RoleRequired("admin"))
-	// api.Echo.GET("/manager", api.managerDashboard, middleware.RoleRequired("manager"))
-	// api.Echo.GET("/employee", api.employeeDashboard, middleware.RoleRequired("employee"))
+	
 	adminGroup := api.Echo.Group("/admin")
 	adminGroup.POST("/create_company", api.createCompany)
 	adminGroup.GET("/companies", api.listCompanies)

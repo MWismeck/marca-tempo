@@ -1,82 +1,82 @@
-
-
-  // InputMask
-  Inputmask({ mask: "999.999.999-99" }).mask("#manager-cpf");
-  Inputmask({ mask: "99.999.999-9" }).mask("#manager-rg");
-  Inputmask({ mask: "99.999.999/9999-99" }).mask("#company-cnpj");
-  Inputmask({ mask: "(99) 9999-9999[9]" }).mask("#company-phone");
-
-  // Cadastro de empresa
-  document.getElementById("form-company").addEventListener("submit", async (e) => {
+document.addEventListener("DOMContentLoaded", () => {
+  // Cadastrar Empresa
+  const formCompany = document.getElementById("form-company");
+  formCompany.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const body = {
+
+    const companyData = {
       name: document.getElementById("company-name").value,
       cnpj: document.getElementById("company-cnpj").value,
       email: document.getElementById("company-email").value,
       fone: document.getElementById("company-phone").value,
-      active: document.getElementById("company-active").value === "true"
+      active: document.getElementById("company-active").value === "true",
     };
 
     try {
-      await axios.post("/admin/create_company", body, {
-        headers: { "X-User-Role": "admin" }
-      });
+      const response = await axios.post("http://localhost:8080/admin/create_company", companyData);
       alert("Empresa cadastrada com sucesso!");
+      formCompany.reset();
     } catch (err) {
-      alert("Erro ao cadastrar empresa.");
-      console.error(err);
+      console.error("Erro ao cadastrar empresa:", err);
+      alert("Erro ao cadastrar empresa: " + (err.response?.data?.error || err.message));
     }
   });
 
-  // Cadastro de gerente
-  document.getElementById("form-manager").addEventListener("submit", async (e) => {
+  // Cadastrar Gerente
+  const formManager = document.getElementById("form-manager");
+  formManager.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const body = {
+
+    const managerData = {
       name: document.getElementById("manager-name").value,
-      email: document.getElementById("manager-email").value,
       cpf: document.getElementById("manager-cpf").value,
       rg: document.getElementById("manager-rg").value,
+      email: document.getElementById("manager-email").value,
       age: parseInt(document.getElementById("manager-age").value),
-      workload: parseFloat(document.getElementById("manager-workload").value),
       active: document.getElementById("manager-active").value === "true",
+      workload: parseFloat(document.getElementById("manager-workload").value),
       password: document.getElementById("manager-password").value,
-      company_cnpj: document.getElementById("manager-cnpj").value
+      company_cnpj: document.getElementById("manager-cnpj").value,
     };
 
     try {
-      await axios.post("/admin/create_manager", body, {
-        headers: { "X-User-Role": "admin" }
-      });
-
-      await axios.post("/login/password", {
-        email: body.email,
-        password: body.password
-      });
-
+      const response = await axios.post("http://localhost:8080/admin/create_manager", managerData);
       alert("Gerente cadastrado com sucesso!");
+      formManager.reset();
     } catch (err) {
-      alert("Erro ao cadastrar gerente.");
-      console.error(err);
+      console.error("Erro ao cadastrar gerente:", err);
+      alert("Erro ao cadastrar gerente: " + (err.response?.data?.error || err.message));
     }
   });
 
-  // Listagem
+  // Carregar Empresas e Gerentes
   document.getElementById("btn-load-data").addEventListener("click", async () => {
     try {
       const [companies, managers] = await Promise.all([
-        axios.get("/admin/companies", { headers: { "X-User-Role": "admin" } }),
-        axios.get("/admin/managers", { headers: { "X-User-Role": "admin" } })
+        axios.get("http://localhost:8080/admin/companies"),
+        axios.get("http://localhost:8080/admin/managers"),
       ]);
 
-      const div = document.getElementById("list-data");
-      div.innerHTML = `
-        <h5>Empresas:</h5>
-        <ul>${companies.data.map(c => `<li><strong>${c.name}</strong> - CNPJ: ${c.cnpj}</li>`).join("")}</ul>
-        <h5>Gerentes:</h5>
-        <ul>${managers.data.map(m => `<li>${m.name} (${m.email}) - CNPJ: ${m.company_cnpj}</li>`).join("")}</ul>
-      `;
+      let html = `<h5>Empresas</h5><ul class="list-group mb-3">`;
+      companies.data.forEach((company) => {
+        html += `<li class="list-group-item">${company.name} - CNPJ: ${company.cnpj}</li>`;
+      });
+      html += `</ul><h5>Gerentes</h5><ul class="list-group">`;
+      managers.data.forEach((manager) => {
+        html += `<li class="list-group-item">${manager.name} (${manager.email})</li>`;
+      });
+      html += `</ul>`;
+
+      document.getElementById("list-data").innerHTML = html;
     } catch (err) {
+      console.error("Erro ao carregar dados:", err);
       alert("Erro ao carregar dados.");
-      console.error(err);
     }
   });
+
+  // Logout
+  document.getElementById("btn-logout").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "index.html";
+  });
+});

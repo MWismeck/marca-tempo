@@ -80,6 +80,18 @@ func (api *API) createEmployee(c echo.Context) error {
 		Active:      *employeeReq.Active,
 		CompanyCNPJ: employeeReq.CompanyCNPJ,
 	}
+	hashedPassword, err := HashPassword(employeeReq.Password)
+if err != nil {
+    return c.String(http.StatusInternalServerError, "Erro ao processar senha")
+}
+login := schemas.Login{
+    Email:    employee.Email,
+    Password: hashedPassword,
+}
+if err := api.DB.DB.Create(&login).Error; err != nil {
+    return c.String(http.StatusInternalServerError, "Erro ao salvar login")
+}
+
 
 	if err := api.DB.AddEmployee(employee); err != nil {
 		return c.String(http.StatusInternalServerError, "Erro ao criar funcionário")
@@ -291,19 +303,48 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }
+type CompanyRequest struct {
+	Name   string `json:"name" validate:"required"`
+	CNPJ   string `json:"cnpj" validate:"required"`
+	Email  string `json:"email" validate:"required,email"`
+	Fone   string `json:"fone" validate:"required"`
+	Active bool   `json:"active"`
+}
+
 
 func (api *API) createCompany(c echo.Context) error {
-	var company schemas.Company
-	if err := c.Bind(&company); err != nil {
+	var req CompanyRequest
+
+	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
 	}
 
+	// opcional: usar validator lib
+	if req.CNPJ == "" || req.Name == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Nome e CNPJ são obrigatórios"})
+	}
+
+	var existing schemas.Company
+	if err := api.DB.DB.Where("cnpj = ?", req.CNPJ).First(&existing).Error; err == nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Empresa já cadastrada"})
+	}
+
+	company := schemas.Company{
+		Name:   req.Name,
+		CNPJ:   req.CNPJ,
+		Email:  req.Email,
+		Fone:   req.Fone,
+		Active: req.Active,
+	}
+
 	if err := api.DB.DB.Create(&company).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao criar empresa"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao salvar empresa"})
 	}
 
 	return c.JSON(http.StatusCreated, company)
 }
+
+
 
 func (api *API) listCompanies(c echo.Context) error {
 	var companies []schemas.Company
@@ -318,8 +359,21 @@ func (api *API) createManager(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
 	}
+
 	if err := req.Validate(); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Erro de validação: " + err.Error()})
+	}
+
+	// Verifica se a empresa com o CNPJ existe
+	var company schemas.Company
+	if err := api.DB.DB.Where("cnpj = ?", req.CompanyCNPJ).First(&company).Error; err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Empresa com este CNPJ não existe"})
+	}
+
+	// Gera hash da senha
+	hashedPassword, err := HashPassword(req.Password)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao gerar hash da senha"})
 	}
 
 	manager := schemas.Employee{
@@ -335,12 +389,25 @@ func (api *API) createManager(c echo.Context) error {
 		CompanyCNPJ: req.CompanyCNPJ,
 	}
 
-	if err := api.DB.DB.Create(&manager).Error; err != nil {
+	tx := api.DB.DB.Begin()
+	if err := tx.Create(&manager).Error; err != nil {
+		tx.Rollback()
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao cadastrar gerente"})
 	}
 
+	login := schemas.Login{
+		Email:    req.Email,
+		Password: hashedPassword,
+	}
+	if err := tx.Create(&login).Error; err != nil {
+		tx.Rollback()
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao salvar login do gerente"})
+	}
+
+	tx.Commit()
 	return c.JSON(http.StatusCreated, manager)
 }
+
 
 func (api *API) listManagers(c echo.Context) error {
 	var managers []schemas.Employee
