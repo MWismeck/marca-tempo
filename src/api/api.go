@@ -2,14 +2,15 @@ package api
 
 import (
 	"context"
+	"time"
+
 	"github.com/MWismeck/marca-tempo/src/db"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
-	"github.com/swaggo/echo-swagger"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"gorm.io/gorm"
-	"time"
 )
 
 type API struct {

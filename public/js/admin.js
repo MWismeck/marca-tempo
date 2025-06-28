@@ -75,8 +75,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Logout
-  document.getElementById("btn-logout").addEventListener("click", () => {
-    localStorage.clear();
-    window.location.href = "index.html";
-  });
+  document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("btn-logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      localStorage.clear();
+      window.location.href = "index.html";
+    });
+  }
+});
+
 });
