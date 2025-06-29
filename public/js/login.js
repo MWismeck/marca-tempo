@@ -8,40 +8,26 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
         const response = await axios.post('http://localhost:8080/login', { email, password });
 
         if (response.status === 200) {
-            // Armazena o email no localStorage (usado para identificar o funcionário)
-            localStorage.setItem('employee_email', email);
-            
-            // Armazena também o ID se estiver disponível na resposta
-            if (response.data && response.data.employee_id) {
-                localStorage.setItem('employee_id', response.data.employee_id);
-            }
-            
-            // Armazena o nome do funcionário se disponível
-            if (response.data && response.data.employee_name) {
-                localStorage.setItem('employee_name', response.data.employee_name);
-            }
+    localStorage.setItem('employee_email', response.data.employee_email);
+    localStorage.setItem('employee_id', response.data.employee_id || "");
+    localStorage.setItem('employee_name', response.data.employee_name || "");
+    localStorage.setItem('role', response.data.role || "");
 
-            // Mostra mensagem de sucesso
-            const messageElement = document.createElement('div');
-            messageElement.className = 'alert alert-success mt-3';
-            messageElement.textContent = 'Login realizado com sucesso! Redirecionando...';
-            document.getElementById('login-form').appendChild(messageElement);
+    const messageElement = document.createElement('div');
+    messageElement.className = 'alert alert-success mt-3';
+    messageElement.textContent = 'Login realizado com sucesso! Redirecionando...';
+    document.getElementById('login-form').appendChild(messageElement);
 
-            // Redireciona para a página de ponto após um breve delay
-          if (response.data.role === "manager") {
-           const escolha = confirm("Você deseja acessar o painel do gerente?\nClique em 'Cancelar' para registrar ponto como funcionário.");
-           if (escolha) {
-             window.location.href = "manager.html";
-               } else {
-    window.location.href = "time-registration.html";
-                }
-         } else if (response.data.role === "admin") {
-  window.location.href = "admin.html";
-      } else {
-  window.location.href = "time-registration.html";
-                 }
+    if (response.data.role === "manager") {
+        const escolha = confirm("Você deseja acessar o painel do gerente?\nClique em 'Cancelar' para registrar ponto como funcionário.");
+        window.location.href = escolha ? "manager.html" : "time-registration.html";
+    } else if (response.data.role === "admin") {
+        window.location.href = "admin.html";
+    } else {
+        window.location.href = "time-registration.html";
+    }
+}
 
-        }
     } catch (err) {
         // Mostra mensagem de erro
         const messageElement = document.createElement('div');
