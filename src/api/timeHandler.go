@@ -188,7 +188,7 @@ func (api *API) CalculateHours(entryTime, lunchExitTime, lunchReturnTime, exitTi
 		log.Warn().Msg("Workload not set or too small, using default of 40 hours per week")
 	}
 
-	dailyWorkload := workload / 7
+	dailyWorkload := workload / 5
 
 	workedDuration := exitTime.Sub(entryTime) - (lunchReturnTime.Sub(lunchExitTime))
 
@@ -396,14 +396,53 @@ func (api *API) editTimeLogByManager(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "ID inválido")
 	}
 
-	var updateData schemas.TimeLog
+	var updateData struct {
+		EntryTime       time.Time `json:"entry_time"`
+		LunchExitTime   time.Time `json:"lunch_exit_time"`
+		LunchReturnTime time.Time `json:"lunch_return_time"`
+		ExitTime        time.Time `json:"exit_time"`
+		MotivoEdicao    string    `json:"motivo_edicao"`
+		ManagerEmail    string    `json:"manager_email"`
+	}
+
 	if err := c.Bind(&updateData); err != nil {
 		return c.JSON(http.StatusBadRequest, "Dados inválidos")
+	}
+
+	// VALIDAÇÃO: Motivo obrigatório
+	if updateData.MotivoEdicao == "" {
+		return c.JSON(http.StatusBadRequest, "Motivo da edição é obrigatório")
+	}
+
+	// VALIDAÇÃO: Email do gerente obrigatório
+	if updateData.ManagerEmail == "" {
+		return c.JSON(http.StatusBadRequest, "Email do gerente é obrigatório")
 	}
 
 	var timeLog schemas.TimeLog
 	if err := api.DB.DB.First(&timeLog, id).Error; err != nil {
 		return c.JSON(http.StatusNotFound, "Registro não encontrado")
+	}
+
+	// VALIDAÇÃO: Verificar se gerente pode editar (mesma empresa)
+	var manager schemas.Employee
+	if err := api.DB.DB.Where("email = ? AND is_manager = ?", updateData.ManagerEmail, true).First(&manager).Error; err != nil {
+		log.Error().Err(err).Msgf("[api] Gerente não encontrado: %s", updateData.ManagerEmail)
+		return c.JSON(http.StatusUnauthorized, "Gerente não encontrado")
+	}
+
+	var employee schemas.Employee
+	if err := api.DB.DB.Where("email = ?", timeLog.EmployeeEmail).First(&employee).Error; err != nil {
+		log.Error().Err(err).Msgf("[api] Funcionário não encontrado: %s", timeLog.EmployeeEmail)
+		return c.JSON(http.StatusNotFound, "Funcionário não encontrado")
+	}
+
+	if manager.CompanyCNPJ != employee.CompanyCNPJ {
+		log.Warn().
+			Str("manager_cnpj", manager.CompanyCNPJ).
+			Str("employee_cnpj", employee.CompanyCNPJ).
+			Msg("[api] Tentativa de edição entre empresas diferentes")
+		return c.JSON(http.StatusForbidden, "Você só pode editar funcionários da sua empresa")
 	}
 
 	// Atualiza apenas os campos enviados
@@ -420,13 +459,22 @@ func (api *API) editTimeLogByManager(c echo.Context) error {
 		timeLog.ExitTime = updateData.ExitTime
 	}
 
-	// Marca edição do gerente
-	timeLog.EditadoPorGerente = updateData.EditadoPorGerente
+	// Salvar motivo e dados da edição
+	timeLog.EditadoPorGerente = manager.Name
 	timeLog.EditadoEm = time.Now()
+	timeLog.MotivoEdicao = updateData.MotivoEdicao
 
 	if err := api.DB.DB.Save(&timeLog).Error; err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao salvar edição do time log")
 		return c.JSON(http.StatusInternalServerError, "Erro ao salvar")
 	}
+
+	log.Info().
+		Int("timeLogId", id).
+		Str("managerEmail", updateData.ManagerEmail).
+		Str("employeeEmail", timeLog.EmployeeEmail).
+		Str("motivo", updateData.MotivoEdicao).
+		Msg("[api] Time log editado pelo gerente")
 
 	return c.JSON(http.StatusOK, timeLog)
 }
@@ -490,10 +538,8 @@ func (api *API) exportTimeLogsRange(c echo.Context) error {
 	sheet := "Período"
 	f.NewSheet(sheet)
 	if index, err := f.GetSheetIndex(sheet); err == nil {
-    f.SetActiveSheet(index)
-}
-
-
+		f.SetActiveSheet(index)
+	}
 
 	headers := []string{"Data", "Entrada", "Saída Almoço", "Retorno", "Saída", "Extras", "Faltantes", "Saldo"}
 	for i, h := range headers {

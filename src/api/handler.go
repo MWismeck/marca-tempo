@@ -24,19 +24,52 @@ import (
 //	@Failure        404
 //	@Router         /Employees/ [get]
 func (api *API) getEmployees(c echo.Context) error {
-	employees, err := api.DB.GetEmployees()
-	if err != nil {
-		return c.String(http.StatusNotFound, "Failed to get employees")
-	}
+	managerEmail := c.QueryParam("manager_email")
 	active := c.QueryParam("active")
 
-	if active != "" {
-		act, err := strconv.ParseBool(active)
-		if err != nil {
-			log.Error().Err(err).Msgf("[api] error to parsing boolean")
-			return c.String(http.StatusInternalServerError, "Failed to parse boolean")
+	var employees []schemas.Employee
+
+	// Se manager_email for fornecido, filtrar por empresa do gerente
+	if managerEmail != "" {
+		// Buscar empresa do gerente
+		var manager schemas.Employee
+		if err := api.DB.DB.Where("email = ? AND is_manager = ?", managerEmail, true).First(&manager).Error; err != nil {
+			log.Error().Err(err).Msgf("[api] Gerente não encontrado: %s", managerEmail)
+			return c.String(http.StatusUnauthorized, "Gerente não encontrado")
 		}
-		employees, err = api.DB.GetFilteredEmployee(act)
+
+		// Filtrar funcionários da mesma empresa
+		query := api.DB.DB.Where("company_cnpj = ?", manager.CompanyCNPJ)
+		
+		if active != "" {
+			if act, err := strconv.ParseBool(active); err == nil {
+				query = query.Where("active = ?", act)
+			}
+		}
+
+		if err := query.Find(&employees).Error; err != nil {
+			log.Error().Err(err).Msg("[api] Erro ao buscar funcionários da empresa")
+			return c.String(http.StatusInternalServerError, "Erro ao buscar funcionários")
+		}
+	} else {
+		// Comportamento original para admin
+		var err error
+		employees, err = api.DB.GetEmployees()
+		if err != nil {
+			return c.String(http.StatusNotFound, "Failed to get employees")
+		}
+
+		if active != "" {
+			act, err := strconv.ParseBool(active)
+			if err != nil {
+				log.Error().Err(err).Msgf("[api] error to parsing boolean")
+				return c.String(http.StatusInternalServerError, "Failed to parse boolean")
+			}
+			employees, err = api.DB.GetFilteredEmployee(act)
+			if err != nil {
+				return c.String(http.StatusInternalServerError, "Failed to filter employees")
+			}
+		}
 	}
 
 	listOfEmployees := map[string][]schemas.EmployeeResponse{"employees:": schemas.NewResponse(employees)}
@@ -64,7 +97,6 @@ func (api *API) createEmployee(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Error validating employee")
 	}
 
-	
 	var company schemas.Company
 	if err := api.DB.DB.Where("cnpj = ?", employeeReq.CompanyCNPJ).First(&company).Error; err != nil {
 		log.Warn().Str("cnpj", employeeReq.CompanyCNPJ).Msg("[api] CNPJ não encontrado")
@@ -78,20 +110,20 @@ func (api *API) createEmployee(c echo.Context) error {
 		RG:          employeeReq.RG,
 		Age:         employeeReq.Age,
 		Active:      *employeeReq.Active,
+		Workload:    employeeReq.Workload,
 		CompanyCNPJ: employeeReq.CompanyCNPJ,
 	}
 	hashedPassword, err := HashPassword(employeeReq.Password)
-if err != nil {
-    return c.String(http.StatusInternalServerError, "Erro ao processar senha")
-}
-login := schemas.Login{
-    Email:    employee.Email,
-    Password: hashedPassword,
-}
-if err := api.DB.DB.Create(&login).Error; err != nil {
-    return c.String(http.StatusInternalServerError, "Erro ao salvar login")
-}
-
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Erro ao processar senha")
+	}
+	login := schemas.Login{
+		Email:    employee.Email,
+		Password: hashedPassword,
+	}
+	if err := api.DB.DB.Create(&login).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Erro ao salvar login")
+	}
 
 	if err := api.DB.AddEmployee(employee); err != nil {
 		return c.String(http.StatusInternalServerError, "Erro ao criar funcionário")
@@ -99,7 +131,6 @@ if err := api.DB.DB.Create(&login).Error; err != nil {
 
 	return c.JSON(http.StatusOK, employee)
 }
-
 
 // getEmployeeId godoc
 //
@@ -181,7 +212,7 @@ func updateEmployeeInfo(recivedEmployee, employee schemas.Employee) schemas.Empl
 	if recivedEmployee.Active != employee.Active {
 		employee.Active = recivedEmployee.Active
 	}
-	if recivedEmployee.Workload == 0 {
+	if recivedEmployee.Workload != 0 {
 		employee.Workload = recivedEmployee.Workload
 	}
 	// não foi adicionado um metodo para o manager
@@ -303,6 +334,7 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }
+
 type CompanyRequest struct {
 	Name   string `json:"name" validate:"required"`
 	CNPJ   string `json:"cnpj" validate:"required"`
@@ -310,7 +342,6 @@ type CompanyRequest struct {
 	Fone   string `json:"fone" validate:"required"`
 	Active bool   `json:"active"`
 }
-
 
 func (api *API) createCompany(c echo.Context) error {
 	var req CompanyRequest
@@ -343,8 +374,6 @@ func (api *API) createCompany(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, company)
 }
-
-
 
 func (api *API) listCompanies(c echo.Context) error {
 	var companies []schemas.Company
@@ -408,7 +437,6 @@ func (api *API) createManager(c echo.Context) error {
 	return c.JSON(http.StatusCreated, manager)
 }
 
-
 func (api *API) listManagers(c echo.Context) error {
 	var managers []schemas.Employee
 	if err := api.DB.DB.Where("is_manager = ?", true).Find(&managers).Error; err != nil {
@@ -416,5 +444,3 @@ func (api *API) listManagers(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, managers)
 }
-
-

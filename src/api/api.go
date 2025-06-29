@@ -121,11 +121,11 @@ func (api *API) recalculateHoursForExistingLogs() {
 
 		// Log the time log details
 		log.Info().
-			Int("timeLogID", timeLog.ID).
+			Uint("timeLogID", timeLog.ID).
 			Str("employeeEmail", timeLog.EmployeeEmail).
 			Str("logDate", timeLog.LogDate.Format("2006-01-02")).
 			Float32("workload", employee.Workload).
-			Float32("dailyWorkload", employee.Workload/7).
+			Float32("dailyWorkload", employee.Workload/5).
 			Float32("extraHours", extraHours).
 			Float32("missingHours", missingHours).
 			Float32("balance", balance).
@@ -166,7 +166,6 @@ func (api *API) setupNewDay() {
 		}
 
 		newLog := schemas.TimeLog{
-			ID:            id,
 			EmployeeEmail: employee.Email,
 			LogDate:       currentDate,
 		}
@@ -200,16 +199,14 @@ func (api *API) ConfigureRoutes() {
 	api.Echo.POST("/login", api.login)
 	api.Echo.POST("/login/password", api.createOrUpdatePassword)
 
-	
 	adminGroup := api.Echo.Group("/admin")
 	adminGroup.POST("/create_company", api.createCompany)
 	adminGroup.GET("/companies", api.listCompanies)
 	adminGroup.POST("/create_manager", api.createManager)
 	adminGroup.GET("/managers", api.listManagers)
 	api.Echo.PUT("/time_logs/:id/manual_edit", api.editTimeLogByManager)
-    api.Echo.POST("/employee/request_change", api.requestTimeEdit)
-    api.Echo.GET("/time_logs/export_range", api.exportTimeLogsRange)
-
+	api.Echo.POST("/employee/request_change", api.requestTimeEdit)
+	api.Echo.GET("/time_logs/export_range", api.exportTimeLogsRange)
 
 	api.Echo.GET("/time-registration.html", func(c echo.Context) error {
 		return c.File("public/time-registration.html")

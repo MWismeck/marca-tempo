@@ -43,8 +43,6 @@ type Company struct {
 	Employees []Employee `gorm:"foreignKey:CompanyCNPJ;references:CNPJ"` // One-to-many via CNPJ
 }
 
-
-
 type EmployeeResponse struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -85,7 +83,6 @@ func NewResponse(employees []Employee) []EmployeeResponse {
 
 type TimeLog struct {
 	gorm.Model
-	ID                int       `json:"id" gorm:"primaryKey"`
 	EmployeeEmail     string    `json:"employee_email" gorm:"type:varchar(255);not null"`
 	LogDate           time.Time `json:"log_date" gorm:"not null"`
 	EntryTime         time.Time `json:"entry_time,omitempty"`
@@ -98,6 +95,7 @@ type TimeLog struct {
 	CreatedAt         time.Time `json:"created_at" gorm:"autoCreateTime"`
 	EditadoPorGerente string    `json:"editado_por_gerente" gorm:"type:varchar(255)"`
 	EditadoEm         time.Time `json:"editado_em"`
+	MotivoEdicao      string    `json:"motivo_edicao" gorm:"type:text"`
 }
 
 type Login struct {
@@ -105,6 +103,3 @@ type Login struct {
 	Email    string `json:"email" gorm:"type:varchar(255);unique;not null"`
 	Password string `json:"password" gorm:"not null"`
 }
-
-
-

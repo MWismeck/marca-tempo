@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", function () {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            const password = document.getElementById('register-password').value;
+
             const employee = {
                 name: document.getElementById('register-name').value,
                 cpf: document.getElementById('register-cpf').value,
@@ -22,10 +24,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 age: parseInt(document.getElementById('register-age').value, 10),
                 workload: parseFloat(document.getElementById('register-workload').value),
                 active: document.getElementById('register-active').value === "true",
-                company_cnpj: document.getElementById('register-cnpj').value
+                company_cnpj: document.getElementById('register-cnpj').value,
+                password: password
             };
-
-            const password = document.getElementById('register-password').value;
 
             try {
                 // Mostra mensagem de carregamento

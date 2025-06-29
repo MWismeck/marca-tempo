@@ -75,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Logout
-  document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn = document.getElementById("btn-logout");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -83,6 +82,4 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = "index.html";
     });
   }
-});
-
 });
