@@ -2,45 +2,46 @@ package api
 
 import (
 	"errors"
+	"net/http"
+	"strconv"
+
 	_ "github.com/MWismeck/marca-tempo/src/docs"
 	"github.com/MWismeck/marca-tempo/src/schemas"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 // getEmployees godoc
 //
-//	@Summary        Get a list of employees
-//	@Desciption     Retrive employees details
-//	@Tags           employees
-//	@Accept         json
-//	@Produce        json
-//	@Param          register path int false  "Registration"
-//	@Sucess         200 {object} schemas.EmployeeResponse
-//	@Failure        404
-//	@Router         /Employees/ [get]
+//	@Summary		Listar funcionários
+//	@Description	Retorna lista de funcionários com filtros opcionais
+//	@Tags			employees
+//	@Accept			json
+//	@Produce		json
+//	@Param			manager_email	query	string	false	"Email do gerente para filtrar funcionários da empresa"
+//	@Param			active			query	boolean	false	"Filtrar por funcionários ativos/inativos"
+//	@Success		200	{object}	map[string][]schemas.EmployeeResponse
+//	@Failure		401	{string}	string	"Gerente não encontrado"
+//	@Failure		404	{string}	string	"Funcionários não encontrados"
+//	@Failure		500	{string}	string	"Erro interno do servidor"
+//	@Router			/employees/ [get]
 func (api *API) getEmployees(c echo.Context) error {
 	managerEmail := c.QueryParam("manager_email")
 	active := c.QueryParam("active")
 
 	var employees []schemas.Employee
 
-	// Se manager_email for fornecido, filtrar por empresa do gerente
 	if managerEmail != "" {
-		// Buscar empresa do gerente
 		var manager schemas.Employee
 		if err := api.DB.DB.Where("email = ? AND is_manager = ?", managerEmail, true).First(&manager).Error; err != nil {
 			log.Error().Err(err).Msgf("[api] Gerente não encontrado: %s", managerEmail)
 			return c.String(http.StatusUnauthorized, "Gerente não encontrado")
 		}
 
-		// Filtrar funcionários da mesma empresa
 		query := api.DB.DB.Where("company_cnpj = ?", manager.CompanyCNPJ)
-		
+
 		if active != "" {
 			if act, err := strconv.ParseBool(active); err == nil {
 				query = query.Where("active = ?", act)
@@ -52,7 +53,6 @@ func (api *API) getEmployees(c echo.Context) error {
 			return c.String(http.StatusInternalServerError, "Erro ao buscar funcionários")
 		}
 	} else {
-		// Comportamento original para admin
 		var err error
 		employees, err = api.DB.GetEmployees()
 		if err != nil {
@@ -79,14 +79,16 @@ func (api *API) getEmployees(c echo.Context) error {
 
 // createEmployee godoc
 //
-//	@Summary        Create employee
-//	@Desciption     Create employee
-//	@Tags           employees
-//	@Accept         json
-//	@Produce        json
-//	@Sucess         200 {object} schemas.EmployeeResponse
-//	@Failure        400
-//	@Router         /Employees/ [post]
+//	@Summary		Criar funcionário
+//	@Description	Cria um novo funcionário no sistema
+//	@Tags			employees
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		EmployeeRequest	true	"Dados do funcionário"
+//	@Success		200		{object}	schemas.Employee
+//	@Failure		400		{string}	string	"Dados inválidos ou empresa não encontrada"
+//	@Failure		500		{string}	string	"Erro interno do servidor"
+//	@Router			/employee/ [post]
 func (api *API) createEmployee(c echo.Context) error {
 	employeeReq := EmployeeRequest{}
 	if err := c.Bind(&employeeReq); err != nil {
@@ -134,14 +136,16 @@ func (api *API) createEmployee(c echo.Context) error {
 
 // getEmployeeId godoc
 //
-//	@Summary        Get a list of employees
-//	@Desciption     Retrive employee details
-//	@Tags           employees
-//	@Accept         json
-//	@Produce        json
-//	@Sucess         200 {object} schemas.EmployeeResponse
-//	@Failure        404
-//	@Router         /Employee/{id} [get]
+//	@Summary		Buscar funcionário por ID
+//	@Description	Retorna os dados de um funcionário específico
+//	@Tags			employees
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"ID do funcionário"
+//	@Success		200	{object}	schemas.Employee
+//	@Failure		404	{string}	string	"Funcionário não encontrado"
+//	@Failure		500	{string}	string	"Erro interno do servidor"
+//	@Router			/employee/{id} [get]
 func (api *API) getEmployeeId(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -157,17 +161,19 @@ func (api *API) getEmployeeId(c echo.Context) error {
 	return c.JSON(http.StatusOK, employee)
 }
 
-// updateEmployees godoc
+// updateEmployee godoc
 //
-//	@Summary        Update a employee
-//	@Desciption     Update a employee details
-//	@Tags           employees
-//	@Accept         json
-//	@Produce        json
-//	@Sucess         200 {object} schemas.EmployeeResponse
-//	@Failure        404
-//	@Failure        500
-//	@Router         /Employee/{id} [put]
+//	@Summary		Atualizar funcionário
+//	@Description	Atualiza os dados de um funcionário
+//	@Tags			employees
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		int					true	"ID do funcionário"
+//	@Param			body	body		schemas.Employee	true	"Dados atualizados do funcionário"
+//	@Success		200		{object}	schemas.Employee
+//	@Failure		404		{string}	string	"Funcionário não encontrado"
+//	@Failure		500		{string}	string	"Erro interno do servidor"
+//	@Router			/employee/{id} [put]
 func (api *API) updateEmployee(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -215,22 +221,22 @@ func updateEmployeeInfo(recivedEmployee, employee schemas.Employee) schemas.Empl
 	if recivedEmployee.Workload != 0 {
 		employee.Workload = recivedEmployee.Workload
 	}
-	// não foi adicionado um metodo para o manager
 
 	return employee
 }
 
-// deleteEmployees godoc
+// deleteEmployee godoc
 //
-//	@Summary        Delete a employee
-//	@Desciption     Delete a employee details
-//	@Tags           employees
-//	@Accept         json
-//	@Produce        json
-//	@Sucess         200 {object} schemas.EmployeeResponse
-//	@Failure        404
-//	@Failure        500
-//	@Router         /Employee/{id} [delete]
+//	@Summary		Excluir funcionário
+//	@Description	Remove um funcionário do sistema
+//	@Tags			employees
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"ID do funcionário"
+//	@Success		200	{object}	schemas.Employee
+//	@Failure		404	{string}	string	"Funcionário não encontrado"
+//	@Failure		500	{string}	string	"Erro interno do servidor"
+//	@Router			/employee/{id} [delete]
 func (api *API) deleteEmployee(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -249,6 +255,19 @@ func (api *API) deleteEmployee(c echo.Context) error {
 	return c.JSON(http.StatusOK, employee)
 }
 
+// login godoc
+//
+//	@Summary		Login do usuário
+//	@Description	Autentica um usuário no sistema
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		LoginRequest	true	"Credenciais de login"
+//	@Success		200		{object}	LoginResponse
+//	@Failure		400		{string}	string	"Dados inválidos"
+//	@Failure		401		{string}	string	"Email ou senha inválidos"
+//	@Failure		500		{string}	string	"Erro interno do servidor"
+//	@Router			/login [post]
 func (api *API) login(c echo.Context) error {
 	loginReq := struct {
 		Email    string `json:"email"`
@@ -268,7 +287,6 @@ func (api *API) login(c echo.Context) error {
 		return c.String(http.StatusUnauthorized, "Invalid email or password")
 	}
 
-	// Get employee details
 	var employee schemas.Employee
 	if err := api.DB.DB.Where("email = ?", loginReq.Email).First(&employee).Error; err != nil {
 		return c.String(http.StatusInternalServerError, "Error retrieving employee details")
@@ -293,11 +311,37 @@ func (api *API) login(c echo.Context) error {
 
 }
 
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LoginResponse struct {
+	Message       string `json:"message"`
+	EmployeeID    uint   `json:"employee_id"`
+	EmployeeEmail string `json:"employee_email"`
+	EmployeeName  string `json:"employee_name"`
+	Role          string `json:"role"`
+}
+
 type PasswordRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
+// createOrUpdatePassword godoc
+//
+//	@Summary		Criar ou atualizar senha
+//	@Description	Cria ou atualiza a senha de um funcionário
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		PasswordRequest	true	"Dados para criação/atualização de senha"
+//	@Success		200		{object}	map[string]string
+//	@Failure		400		{object}	map[string]string
+//	@Failure		404		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/login/password [post]
 func (api *API) createOrUpdatePassword(c echo.Context) error {
 	var req PasswordRequest
 	if err := c.Bind(&req); err != nil {
@@ -316,13 +360,11 @@ func (api *API) createOrUpdatePassword(c echo.Context) error {
 
 	var login schemas.Login
 	if err := api.DB.DB.Where("email = ?", req.Email).First(&login).Error; err == nil {
-
 		login.Password = string(hashedPassword)
 		if err := api.DB.DB.Save(&login).Error; err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
 		}
 	} else {
-
 		newLogin := schemas.Login{
 			Email:    req.Email,
 			Password: string(hashedPassword),
@@ -343,6 +385,18 @@ type CompanyRequest struct {
 	Active bool   `json:"active"`
 }
 
+// createCompany godoc
+//
+//	@Summary		Criar empresa
+//	@Description	Cria uma nova empresa no sistema
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		CompanyRequest	true	"Dados da empresa"
+//	@Success		201		{object}	schemas.Company
+//	@Failure		400		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/admin/create_company [post]
 func (api *API) createCompany(c echo.Context) error {
 	var req CompanyRequest
 
@@ -350,7 +404,6 @@ func (api *API) createCompany(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
 	}
 
-	// opcional: usar validator lib
 	if req.CNPJ == "" || req.Name == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Nome e CNPJ são obrigatórios"})
 	}
@@ -375,6 +428,16 @@ func (api *API) createCompany(c echo.Context) error {
 	return c.JSON(http.StatusCreated, company)
 }
 
+// listCompanies godoc
+//
+//	@Summary		Listar empresas
+//	@Description	Retorna lista de todas as empresas cadastradas
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		schemas.Company
+//	@Failure		500	{object}	map[string]string
+//	@Router			/admin/companies [get]
 func (api *API) listCompanies(c echo.Context) error {
 	var companies []schemas.Company
 	if err := api.DB.DB.Preload("Employees").Find(&companies).Error; err != nil {
@@ -383,6 +446,18 @@ func (api *API) listCompanies(c echo.Context) error {
 	return c.JSON(http.StatusOK, companies)
 }
 
+// createManager godoc
+//
+//	@Summary		Criar gerente
+//	@Description	Cria um novo gerente no sistema
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		EmployeeRequest	true	"Dados do gerente"
+//	@Success		201		{object}	schemas.Employee
+//	@Failure		400		{object}	map[string]string
+//	@Failure		500		{object}	map[string]string
+//	@Router			/admin/create_manager [post]
 func (api *API) createManager(c echo.Context) error {
 	var req EmployeeRequest
 	if err := c.Bind(&req); err != nil {
@@ -393,13 +468,11 @@ func (api *API) createManager(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Erro de validação: " + err.Error()})
 	}
 
-	// Verifica se a empresa com o CNPJ existe
 	var company schemas.Company
 	if err := api.DB.DB.Where("cnpj = ?", req.CompanyCNPJ).First(&company).Error; err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Empresa com este CNPJ não existe"})
 	}
 
-	// Gera hash da senha
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao gerar hash da senha"})
@@ -437,6 +510,16 @@ func (api *API) createManager(c echo.Context) error {
 	return c.JSON(http.StatusCreated, manager)
 }
 
+// listManagers godoc
+//
+//	@Summary		Listar gerentes
+//	@Description	Retorna lista de todos os gerentes cadastrados
+//	@Tags			admin
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		schemas.Employee
+//	@Failure		500	{object}	map[string]string
+//	@Router			/admin/managers [get]
 func (api *API) listManagers(c echo.Context) error {
 	var managers []schemas.Employee
 	if err := api.DB.DB.Where("is_manager = ?", true).Find(&managers).Error; err != nil {

@@ -1,8 +1,9 @@
 package schemas
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Employee struct {

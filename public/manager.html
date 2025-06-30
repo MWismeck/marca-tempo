@@ -133,27 +133,72 @@
 
 <!-- Modal de Aprovação/Rejeição -->
 <div class="modal fade" id="processRequestModal" tabindex="-1">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <form id="process-request-form">
         <div class="modal-header">
-          <h5 class="modal-title" id="process-modal-title">Processar Solicitação</h5>
+          <h5 class="modal-title" id="process-modal-title">
+            <i class="fas fa-clipboard-check"></i> Processar Solicitação de Alteração
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div id="request-details" class="mb-3"></div>
+          <!-- Detalhes da Solicitação -->
+          <div id="request-details" class="mb-4"></div>
+          
+          <!-- Registro Atual vs Sugerido -->
+          <div class="row mb-4" id="comparison-section" style="display: none;">
+            <div class="col-md-6">
+              <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                  <i class="fas fa-clock"></i> Registro Atual
+                </div>
+                <div class="card-body" id="current-record">
+                  <!-- Será preenchido dinamicamente -->
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                  <i class="fas fa-edit"></i> Valores Sugeridos pelo Funcionário
+                </div>
+                <div class="card-body" id="suggested-record">
+                  <!-- Será preenchido dinamicamente -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ação Rápida para Aprovação -->
+          <div class="alert alert-info" id="quick-action-info" style="display: none;">
+            <h6><i class="fas fa-lightbulb"></i> Ação Rápida</h6>
+            <p class="mb-2">Se você aprovar esta solicitação, será direcionado automaticamente para editar o registro com os valores sugeridos já preenchidos.</p>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="auto-edit-checkbox" checked>
+              <label class="form-check-label" for="auto-edit-checkbox">
+                Abrir edição automaticamente após aprovação
+              </label>
+            </div>
+          </div>
+
+          <!-- Comentário do Gerente -->
           <div class="mb-3">
             <label class="form-label"><strong>Comentário do Gerente *</strong></label>
             <textarea class="form-control" name="comentario" rows="3" required
-                      placeholder="Adicione um comentário sobre sua decisão..."></textarea>
+                      placeholder="Adicione um comentário sobre sua decisão. Ex: 'Aprovado conforme justificativa apresentada' ou 'Rejeitado - necessário mais detalhes'"></textarea>
+            <div class="form-text">Este comentário será visível para o funcionário no histórico.</div>
           </div>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
           <button type="button" class="btn btn-success" id="approve-btn">
-            <i class="fas fa-check"></i> Aprovar
+            <i class="fas fa-check"></i> Aprovar Solicitação
           </button>
           <button type="button" class="btn btn-danger" id="reject-btn">
-            <i class="fas fa-times"></i> Rejeitar
+            <i class="fas fa-ban"></i> Rejeitar Solicitação
           </button>
         </div>
       </form>

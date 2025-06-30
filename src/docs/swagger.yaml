@@ -1,196 +1,1043 @@
-definitions:
-  schemas.TimeLog:
-    type: object
-info:
-  contact: {}
-paths:
-  /Employee/{id}:
-    delete:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Delete a employee
-      tags:
-      - employees
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "404":
-          description: Not Found
-      summary: Get a list of employees
-      tags:
-      - employees
-    put:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Update a employee
-      tags:
-      - employees
-  /Employees/:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Registration
-        in: path
-        name: register
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "404":
-          description: Not Found
-      summary: Get a list of employees
-      tags:
-      - employees
-    post:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "400":
-          description: Bad Request
-      summary: Create employee
-      tags:
-      - employees
-  /timeLogs:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve all time logs for a specific employee
-      parameters:
-      - description: Employee ID
-        in: query
-        name: employee_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/schemas.TimeLog'
-            type: array
-        "400":
-          description: Invalid employee ID
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Get time logs
-      tags:
-      - timeLogs
-    post:
-      consumes:
-      - application/json
-      description: Create a new time log entry for an employee
-      parameters:
-      - description: Time Log Data
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.TimeLog'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/schemas.TimeLog'
-        "400":
-          description: Invalid time log data
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Create a time log
-      tags:
-      - timeLogs
-  /timeLogs/{id}:
-    delete:
-      description: Delete an existing time log entry for an employee
-      parameters:
-      - description: Time Log ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: Time log deleted
-          schema:
-            type: string
-        "404":
-          description: Time log not found
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Delete a time log
-      tags:
-      - timeLogs
-    put:
-      consumes:
-      - application/json
-      description: Update an existing time log entry for an employee
-      parameters:
-      - description: Time Log ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Updated Time Log Data
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.TimeLog'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/schemas.TimeLog'
-        "400":
-          description: Invalid time log data
-          schema:
-            type: string
-        "404":
-          description: Time log not found
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Update a time log
-      tags:
-      - timeLogs
 swagger: "2.0"
+info:
+  title: "Marca Tempo API"
+  description: "Sistema de controle de ponto eletrônico para empresas"
+  version: "1.0.0"
+  contact:
+    name: "Marca Tempo Support"
+    email: "support@marcatempo.com"
+host: "localhost:8080"
+basePath: "/"
+schemes:
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+tags:
+  - name: "auth"
+    description: "Autenticação e login"
+  - name: "employees"
+    description: "Gestão de funcionários"
+  - name: "companies"
+    description: "Gestão de empresas"
+  - name: "timeLogs"
+    description: "Registros de ponto"
+  - name: "admin"
+    description: "Funcionalidades administrativas"
+  - name: "manager"
+    description: "Funcionalidades de gerente"
+  - name: "export"
+    description: "Exportação de relatórios"
+paths:
+  /login:
+    post:
+      tags:
+        - "auth"
+      summary: "Login do usuário"
+      description: "Autentica um usuário no sistema"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Credenciais de login"
+          schema:
+            $ref: "#/definitions/LoginRequest"
+      responses:
+        200:
+          description: "Login realizado com sucesso"
+          schema:
+            $ref: "#/definitions/LoginResponse"
+        400:
+          description: "Dados inválidos"
+          schema:
+            type: "string"
+        401:
+          description: "Email ou senha inválidos"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /login/password:
+    post:
+      tags:
+        - "auth"
+      summary: "Criar ou atualizar senha"
+      description: "Cria ou atualiza a senha de um funcionário"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados para criação/atualização de senha"
+          schema:
+            $ref: "#/definitions/PasswordRequest"
+      responses:
+        200:
+          description: "Senha atualizada com sucesso"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+        400:
+          description: "Dados inválidos"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        404:
+          description: "Funcionário não encontrado"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /employees/:
+    get:
+      tags:
+        - "employees"
+      summary: "Listar funcionários"
+      description: "Retorna lista de funcionários com filtros opcionais"
+      parameters:
+        - name: "manager_email"
+          in: "query"
+          type: "string"
+          description: "Email do gerente para filtrar funcionários da empresa"
+        - name: "active"
+          in: "query"
+          type: "boolean"
+          description: "Filtrar por funcionários ativos/inativos"
+      responses:
+        200:
+          description: "Lista de funcionários"
+          schema:
+            type: "object"
+            properties:
+              "employees:":
+                type: "array"
+                items:
+                  $ref: "#/definitions/EmployeeResponse"
+        401:
+          description: "Gerente não encontrado"
+          schema:
+            type: "string"
+        404:
+          description: "Funcionários não encontrados"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /employee/:
+    post:
+      tags:
+        - "employees"
+      summary: "Criar funcionário"
+      description: "Cria um novo funcionário no sistema"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados do funcionário"
+          schema:
+            $ref: "#/definitions/EmployeeRequest"
+      responses:
+        200:
+          description: "Funcionário criado com sucesso"
+          schema:
+            $ref: "#/definitions/Employee"
+        400:
+          description: "Dados inválidos ou empresa não encontrada"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /employee/{id}:
+    get:
+      tags:
+        - "employees"
+      summary: "Buscar funcionário por ID"
+      description: "Retorna os dados de um funcionário específico"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do funcionário"
+      responses:
+        200:
+          description: "Dados do funcionário"
+          schema:
+            $ref: "#/definitions/Employee"
+        404:
+          description: "Funcionário não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+    put:
+      tags:
+        - "employees"
+      summary: "Atualizar funcionário"
+      description: "Atualiza os dados de um funcionário"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do funcionário"
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados atualizados do funcionário"
+          schema:
+            $ref: "#/definitions/Employee"
+      responses:
+        200:
+          description: "Funcionário atualizado com sucesso"
+          schema:
+            $ref: "#/definitions/Employee"
+        404:
+          description: "Funcionário não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+    delete:
+      tags:
+        - "employees"
+      summary: "Excluir funcionário"
+      description: "Remove um funcionário do sistema"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do funcionário"
+      responses:
+        200:
+          description: "Funcionário excluído com sucesso"
+          schema:
+            $ref: "#/definitions/Employee"
+        404:
+          description: "Funcionário não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /admin/create_company:
+    post:
+      tags:
+        - "admin"
+      summary: "Criar empresa"
+      description: "Cria uma nova empresa no sistema"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados da empresa"
+          schema:
+            $ref: "#/definitions/CompanyRequest"
+      responses:
+        201:
+          description: "Empresa criada com sucesso"
+          schema:
+            $ref: "#/definitions/Company"
+        400:
+          description: "Dados inválidos ou empresa já existe"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /admin/companies:
+    get:
+      tags:
+        - "admin"
+      summary: "Listar empresas"
+      description: "Retorna lista de todas as empresas cadastradas"
+      responses:
+        200:
+          description: "Lista de empresas"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Company"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /admin/create_manager:
+    post:
+      tags:
+        - "admin"
+      summary: "Criar gerente"
+      description: "Cria um novo gerente no sistema"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados do gerente"
+          schema:
+            $ref: "#/definitions/EmployeeRequest"
+      responses:
+        201:
+          description: "Gerente criado com sucesso"
+          schema:
+            $ref: "#/definitions/Employee"
+        400:
+          description: "Dados inválidos ou empresa não existe"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /admin/managers:
+    get:
+      tags:
+        - "admin"
+      summary: "Listar gerentes"
+      description: "Retorna lista de todos os gerentes cadastrados"
+      responses:
+        200:
+          description: "Lista de gerentes"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Employee"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /time_logs:
+    get:
+      tags:
+        - "timeLogs"
+      summary: "Buscar registros de ponto"
+      description: "Retorna registros de ponto de um funcionário específico"
+      parameters:
+        - name: "employee_email"
+          in: "query"
+          required: true
+          type: "string"
+          description: "Email do funcionário"
+      responses:
+        200:
+          description: "Lista de registros de ponto"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/TimeLog"
+        400:
+          description: "Email do funcionário inválido"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+    post:
+      tags:
+        - "timeLogs"
+      summary: "Criar registro de ponto"
+      description: "Cria um novo registro de ponto para um funcionário"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados do registro de ponto"
+          schema:
+            $ref: "#/definitions/TimeLog"
+      responses:
+        201:
+          description: "Registro criado com sucesso"
+          schema:
+            $ref: "#/definitions/TimeLog"
+        400:
+          description: "Dados inválidos ou funcionário não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /time_logs/{id}:
+    put:
+      tags:
+        - "timeLogs"
+      summary: "Registrar ponto"
+      description: "Registra entrada, saída para almoço, retorno do almoço ou saída"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do registro de ponto"
+        - name: "employee_email"
+          in: "query"
+          required: true
+          type: "string"
+          description: "Email do funcionário"
+      responses:
+        200:
+          description: "Ponto registrado com sucesso"
+          schema:
+            $ref: "#/definitions/TimeLog"
+        201:
+          description: "Novo registro criado"
+          schema:
+            $ref: "#/definitions/TimeLog"
+        400:
+          description: "Dados inválidos ou todos os pontos já registrados"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+    delete:
+      tags:
+        - "timeLogs"
+      summary: "Excluir registro de ponto"
+      description: "Remove um registro de ponto do sistema"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do registro de ponto"
+      responses:
+        200:
+          description: "Registro excluído com sucesso"
+          schema:
+            type: "string"
+        400:
+          description: "ID inválido"
+          schema:
+            type: "string"
+        404:
+          description: "Registro não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /time_logs/{id}/manual_edit:
+    put:
+      tags:
+        - "manager"
+      summary: "Editar registro manualmente"
+      description: "Permite ao gerente editar manualmente um registro de ponto"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID do registro de ponto"
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados para edição manual"
+          schema:
+            $ref: "#/definitions/ManualEditRequest"
+      responses:
+        200:
+          description: "Registro editado com sucesso"
+          schema:
+            $ref: "#/definitions/TimeLog"
+        400:
+          description: "Dados inválidos ou motivo obrigatório"
+          schema:
+            type: "string"
+        401:
+          description: "Gerente não encontrado"
+          schema:
+            type: "string"
+        403:
+          description: "Sem permissão para editar funcionários de outra empresa"
+          schema:
+            type: "string"
+        404:
+          description: "Registro não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /employee/request_change:
+    post:
+      tags:
+        - "manager"
+      summary: "Solicitar alteração de ponto"
+      description: "Funcionário solicita alteração em seu registro de ponto"
+      parameters:
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados da solicitação"
+          schema:
+            $ref: "#/definitions/PontoSolicitacao"
+      responses:
+        201:
+          description: "Solicitação registrada com sucesso"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              id:
+                type: "integer"
+              status:
+                type: "string"
+        400:
+          description: "Dados inválidos"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /manager/requests:
+    get:
+      tags:
+        - "manager"
+      summary: "Buscar solicitações do gerente"
+      description: "Retorna solicitações de alteração de ponto para o gerente"
+      parameters:
+        - name: "manager_email"
+          in: "query"
+          required: true
+          type: "string"
+          description: "Email do gerente"
+      responses:
+        200:
+          description: "Lista de solicitações"
+          schema:
+            type: "object"
+            properties:
+              pending:
+                type: "array"
+                items:
+                  $ref: "#/definitions/RequestWithEmployeeName"
+              processed:
+                type: "array"
+                items:
+                  $ref: "#/definitions/RequestWithEmployeeName"
+        400:
+          description: "Email do gerente obrigatório"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        401:
+          description: "Gerente não encontrado"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /manager/requests/{id}/status:
+    put:
+      tags:
+        - "manager"
+      summary: "Atualizar status da solicitação"
+      description: "Gerente aprova ou rejeita uma solicitação de alteração"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          type: "integer"
+          description: "ID da solicitação"
+        - name: "body"
+          in: "body"
+          required: true
+          description: "Dados para atualização do status"
+          schema:
+            $ref: "#/definitions/UpdateRequestStatusRequest"
+      responses:
+        200:
+          description: "Solicitação processada com sucesso"
+          schema:
+            type: "object"
+            properties:
+              message:
+                type: "string"
+              request:
+                $ref: "#/definitions/PontoSolicitacao"
+        400:
+          description: "Dados inválidos ou solicitação já processada"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        401:
+          description: "Gerente não encontrado"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        403:
+          description: "Sem permissão para processar solicitações de outra empresa"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        404:
+          description: "Solicitação não encontrada"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+  /time_logs/export:
+    get:
+      tags:
+        - "export"
+      summary: "Exportar registros para Excel"
+      description: "Exporta todos os registros de ponto de um funcionário para Excel"
+      parameters:
+        - name: "employee_email"
+          in: "query"
+          required: true
+          type: "string"
+          description: "Email do funcionário"
+      produces:
+        - "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      responses:
+        200:
+          description: "Arquivo Excel gerado com sucesso"
+          schema:
+            type: "file"
+        400:
+          description: "Email inválido ou funcionário não encontrado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+  /time_logs/export_range:
+    get:
+      tags:
+        - "export"
+      summary: "Exportar registros por período"
+      description: "Exporta registros de ponto de um funcionário em um período específico"
+      parameters:
+        - name: "employee_email"
+          in: "query"
+          required: true
+          type: "string"
+          description: "Email do funcionário"
+        - name: "start"
+          in: "query"
+          required: true
+          type: "string"
+          format: "date"
+          description: "Data de início (YYYY-MM-DD)"
+        - name: "end"
+          in: "query"
+          required: true
+          type: "string"
+          format: "date"
+          description: "Data de fim (YYYY-MM-DD)"
+      produces:
+        - "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      responses:
+        200:
+          description: "Arquivo Excel gerado com sucesso"
+          schema:
+            type: "file"
+        400:
+          description: "Parâmetros obrigatórios ou formato de data inválido"
+          schema:
+            type: "string"
+        404:
+          description: "Nenhum registro no período selecionado"
+          schema:
+            type: "string"
+        500:
+          description: "Erro interno do servidor"
+          schema:
+            type: "string"
+definitions:
+  LoginRequest:
+    type: "object"
+    required:
+      - "email"
+      - "password"
+    properties:
+      email:
+        type: "string"
+        format: "email"
+        description: "Email do usuário"
+      password:
+        type: "string"
+        description: "Senha do usuário"
+  LoginResponse:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+      employee_id:
+        type: "integer"
+      employee_email:
+        type: "string"
+      employee_name:
+        type: "string"
+      role:
+        type: "string"
+        enum: ["admin", "manager", "employee"]
+  PasswordRequest:
+    type: "object"
+    required:
+      - "email"
+      - "password"
+    properties:
+      email:
+        type: "string"
+        format: "email"
+        description: "Email do funcionário"
+      password:
+        type: "string"
+        description: "Nova senha"
+  Employee:
+    type: "object"
+    properties:
+      ID:
+        type: "integer"
+      CreatedAt:
+        type: "string"
+        format: "date-time"
+      UpdatedAt:
+        type: "string"
+        format: "date-time"
+      DeletedAt:
+        type: "string"
+        format: "date-time"
+      name:
+        type: "string"
+      cpf:
+        type: "string"
+      rg:
+        type: "string"
+      email:
+        type: "string"
+        format: "email"
+      age:
+        type: "integer"
+      active:
+        type: "boolean"
+      workload:
+        type: "number"
+        format: "float"
+      ismanager:
+        type: "boolean"
+      is_admin:
+        type: "boolean"
+      company_cnpj:
+        type: "string"
+  EmployeeRequest:
+    type: "object"
+    required:
+      - "name"
+      - "email"
+      - "cpf"
+      - "company_cnpj"
+      - "password"
+    properties:
+      name:
+        type: "string"
+      cpf:
+        type: "string"
+      rg:
+        type: "string"
+      email:
+        type: "string"
+        format: "email"
+      age:
+        type: "integer"
+      active:
+        type: "boolean"
+      workload:
+        type: "number"
+        format: "float"
+      company_cnpj:
+        type: "string"
+      password:
+        type: "string"
+  EmployeeResponse:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      updatedAt:
+        type: "string"
+        format: "date-time"
+      deletedAt:
+        type: "string"
+        format: "date-time"
+      name:
+        type: "string"
+      cpf:
+        type: "string"
+      rg:
+        type: "string"
+      email:
+        type: "string"
+        format: "email"
+      age:
+        type: "integer"
+      active:
+        type: "boolean"
+      workload:
+        type: "number"
+        format: "float"
+  Company:
+    type: "object"
+    properties:
+      ID:
+        type: "integer"
+      CreatedAt:
+        type: "string"
+        format: "date-time"
+      UpdatedAt:
+        type: "string"
+        format: "date-time"
+      DeletedAt:
+        type: "string"
+        format: "date-time"
+      name:
+        type: "string"
+      cnpj:
+        type: "string"
+      email:
+        type: "string"
+        format: "email"
+      fone:
+        type: "string"
+      active:
+        type: "boolean"
+      employees:
+        type: "array"
+        items:
+          $ref: "#/definitions/Employee"
+  CompanyRequest:
+    type: "object"
+    required:
+      - "name"
+      - "cnpj"
+      - "email"
+      - "fone"
+    properties:
+      name:
+        type: "string"
+      cnpj:
+        type: "string"
+      email:
+        type: "string"
+        format: "email"
+      fone:
+        type: "string"
+      active:
+        type: "boolean"
+  TimeLog:
+    type: "object"
+    properties:
+      ID:
+        type: "integer"
+      CreatedAt:
+        type: "string"
+        format: "date-time"
+      UpdatedAt:
+        type: "string"
+        format: "date-time"
+      DeletedAt:
+        type: "string"
+        format: "date-time"
+      employee_email:
+        type: "string"
+        format: "email"
+      log_date:
+        type: "string"
+        format: "date-time"
+      entry_time:
+        type: "string"
+        format: "date-time"
+      lunch_exit_time:
+        type: "string"
+        format: "date-time"
+      lunch_return_time:
+        type: "string"
+        format: "date-time"
+      exit_time:
+        type: "string"
+        format: "date-time"
+      extra_hours:
+        type: "number"
+        format: "float"
+      missing_hours:
+        type: "number"
+        format: "float"
+      balance:
+        type: "number"
+        format: "float"
+      created_at:
+        type: "string"
+        format: "date-time"
+      editado_por_gerente:
+        type: "string"
+      editado_em:
+        type: "string"
+        format: "date-time"
+      motivo_edicao:
+        type: "string"
+  PontoSolicitacao:
+    type: "object"
+    required:
+      - "funcionario_email"
+      - "motivo"
+    properties:
+      ID:
+        type: "integer"
+      CreatedAt:
+        type: "string"
+        format: "date-time"
+      UpdatedAt:
+        type: "string"
+        format: "date-time"
+      DeletedAt:
+        type: "string"
+        format: "date-time"
+      funcionario_email:
+        type: "string"
+        format: "email"
+      data_solicitada:
+        type: "string"
+        format: "date-time"
+      motivo:
+        type: "string"
+      status:
+        type: "string"
+        enum: ["pendente", "aprovado", "rejeitado"]
+      gerente_email:
+        type: "string"
+        format: "email"
+      comentario_gerente:
+        type: "string"
+      processado_em:
+        type: "string"
+        format: "date-time"
+  ManualEditRequest:
+    type: "object"
+    required:
+      - "motivo_edicao"
+      - "manager_email"
+    properties:
+      entry_time:
+        type: "string"
+        format: "date-time"
+      lunch_exit_time:
+        type: "string"
+        format: "date-time"
+      lunch_return_time:
+        type: "string"
+        format: "date-time"
+      exit_time:
+        type: "string"
+        format: "date-time"
+      motivo_edicao:
+        type: "string"
+      manager_email:
+        type: "string"
+        format: "email"
+  UpdateRequestStatusRequest:
+    type: "object"
+    required:
+      - "status"
+      - "comentario_gerente"
+      - "gerente_email"
+    properties:
+      status:
+        type: "string"
+        enum: ["aprovado", "rejeitado"]
+      comentario_gerente:
+        type: "string"
+      gerente_email:
+        type: "string"
+        format: "email"
+  RequestWithEmployeeName:
+    type: "object"
+    allOf:
+      - $ref: "#/definitions/PontoSolicitacao"
+      - type: "object"
+        properties:
+          funcionario_nome:
+            type: "string"

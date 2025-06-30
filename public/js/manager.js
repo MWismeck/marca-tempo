@@ -201,18 +201,27 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Buscar o registro de ponto atual para comparação
+      let currentTimeLog = null;
+      try {
+        const timeLogRes = await axios.get(`http://localhost:8080/time_logs?employee_email=${encodeURIComponent(request.funcionario_email)}`);
+        const timeLogs = timeLogRes.data || [];
+        
+        // Encontrar o registro da data solicitada
+        const requestDate = new Date(request.data_solicitada).toISOString().split('T')[0];
+        currentTimeLog = timeLogs.find(log => {
+          const logDate = new Date(log.log_date).toISOString().split('T')[0];
+          return logDate === requestDate;
+        });
+      } catch (err) {
+        console.warn("Erro ao buscar registros de ponto:", err);
+      }
+
+      // Analisar o motivo para extrair valores sugeridos
+      const suggestedValues = extractSuggestedValues(request.motivo);
+      
       // Preencher detalhes no modal
-      document.getElementById("request-details").innerHTML = `
-        <div class="card bg-light">
-          <div class="card-body">
-            <h6 class="card-title">Detalhes da Solicitação</h6>
-            <p><strong>Funcionário:</strong> ${request.funcionario_nome || request.funcionario_email}</p>
-            <p><strong>Data Solicitada:</strong> ${new Date(request.data_solicitada).toLocaleDateString('pt-BR')}</p>
-            <p><strong>Motivo:</strong> ${request.motivo}</p>
-            <p><strong>Solicitado em:</strong> ${new Date(request.CreatedAt).toLocaleDateString('pt-BR')} às ${new Date(request.CreatedAt).toLocaleTimeString('pt-BR')}</p>
-          </div>
-        </div>
-      `;
+      fillRequestDetails(request, currentTimeLog, suggestedValues);
 
       // Limpar comentário anterior
       document.querySelector('textarea[name="comentario"]').value = "";
@@ -223,6 +232,108 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Erro ao carregar detalhes da solicitação.");
     }
   };
+
+  // Função para extrair valores sugeridos do motivo
+  function extractSuggestedValues(motivo) {
+    const suggested = {};
+    
+    if (motivo.includes("VALORES CORRETOS SUGERIDOS:")) {
+      const lines = motivo.split('\n');
+      lines.forEach(line => {
+        if (line.includes('- Entrada:')) {
+          suggested.entry = line.split('- Entrada:')[1].trim();
+        } else if (line.includes('- Saída Almoço:')) {
+          suggested.lunchExit = line.split('- Saída Almoço:')[1].trim();
+        } else if (line.includes('- Retorno Almoço:')) {
+          suggested.lunchReturn = line.split('- Retorno Almoço:')[1].trim();
+        } else if (line.includes('- Saída:')) {
+          suggested.exit = line.split('- Saída:')[1].trim();
+        }
+      });
+    }
+    
+    return suggested;
+  }
+
+  // Função para preencher detalhes da solicitação
+  function fillRequestDetails(request, currentTimeLog, suggestedValues) {
+    const formatTime = (timeStr) => {
+      if (!timeStr || timeStr === "0001-01-01T00:00:00Z") return "Não registrado";
+      return new Date(timeStr).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+    };
+
+    // Detalhes básicos da solicitação
+    document.getElementById("request-details").innerHTML = `
+      <div class="card bg-light">
+        <div class="card-body">
+          <h6 class="card-title"><i class="fas fa-info-circle"></i> Detalhes da Solicitação</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Funcionário:</strong> ${request.funcionario_nome || request.funcionario_email}</p>
+              <p><strong>Data do Registro:</strong> ${new Date(request.data_solicitada).toLocaleDateString('pt-BR')}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Solicitado em:</strong> ${new Date(request.CreatedAt).toLocaleDateString('pt-BR')} às ${new Date(request.CreatedAt).toLocaleTimeString('pt-BR')}</p>
+              <p><strong>Status:</strong> <span class="badge bg-warning">Pendente</span></p>
+            </div>
+          </div>
+          <div class="mt-3">
+            <strong>Motivo da Solicitação:</strong>
+            <div class="border rounded p-2 mt-1 bg-white" style="max-height: 150px; overflow-y: auto;">
+              ${request.motivo.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Mostrar comparação se houver registro atual
+    if (currentTimeLog) {
+      document.getElementById("current-record").innerHTML = `
+        <div class="row">
+          <div class="col-6"><strong>Entrada:</strong><br>${formatTime(currentTimeLog.entry_time)}</div>
+          <div class="col-6"><strong>Saída Almoço:</strong><br>${formatTime(currentTimeLog.lunch_exit_time)}</div>
+          <div class="col-6 mt-2"><strong>Retorno Almoço:</strong><br>${formatTime(currentTimeLog.lunch_return_time)}</div>
+          <div class="col-6 mt-2"><strong>Saída:</strong><br>${formatTime(currentTimeLog.exit_time)}</div>
+        </div>
+        ${currentTimeLog.editado_por_gerente ? `
+          <div class="alert alert-warning mt-2 mb-0">
+            <small><i class="fas fa-edit"></i> Já editado por: ${currentTimeLog.editado_por_gerente} em ${new Date(currentTimeLog.editado_em).toLocaleDateString('pt-BR')}</small>
+          </div>
+        ` : ''}
+      `;
+
+      // Mostrar valores sugeridos se existirem
+      if (Object.keys(suggestedValues).length > 0) {
+        document.getElementById("suggested-record").innerHTML = `
+          <div class="row">
+            <div class="col-6"><strong>Entrada:</strong><br>${suggestedValues.entry || 'Não informado'}</div>
+            <div class="col-6"><strong>Saída Almoço:</strong><br>${suggestedValues.lunchExit || 'Não informado'}</div>
+            <div class="col-6 mt-2"><strong>Retorno Almoço:</strong><br>${suggestedValues.lunchReturn || 'Não informado'}</div>
+            <div class="col-6 mt-2"><strong>Saída:</strong><br>${suggestedValues.exit || 'Não informado'}</div>
+          </div>
+          <div class="alert alert-success mt-2 mb-0">
+            <small><i class="fas fa-lightbulb"></i> Valores sugeridos pelo funcionário para correção</small>
+          </div>
+        `;
+        document.getElementById("comparison-section").style.display = "block";
+        document.getElementById("quick-action-info").style.display = "block";
+      } else {
+        document.getElementById("suggested-record").innerHTML = `
+          <div class="text-muted text-center py-3">
+            <i class="fas fa-info-circle"></i><br>
+            O funcionário não informou valores específicos.<br>
+            Você precisará verificar manualmente os horários corretos.
+          </div>
+        `;
+        document.getElementById("comparison-section").style.display = "block";
+        document.getElementById("quick-action-info").style.display = "none";
+      }
+    } else {
+      document.getElementById("comparison-section").style.display = "none";
+      document.getElementById("quick-action-info").style.display = "none";
+    }
+  }
 
   // Aprovar solicitação
   document.getElementById("approve-btn").addEventListener("click", async () => {
@@ -264,16 +375,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Se aprovado, abrir modal de edição automaticamente
       if (status === "aprovado") {
-        // Buscar detalhes da solicitação para obter o email do funcionário
-        const managerEmail = localStorage.getItem("employee_email");
-        const res = await axios.get(`http://localhost:8080/manager/requests?manager_email=${encodeURIComponent(managerEmail)}`);
-        const allRequests = [...res.data.pending, ...res.data.processed];
-        const request = allRequests.find(req => req.ID === currentRequestId);
+        // Verificar se o usuário quer edição automática
+        const autoEdit = document.getElementById("auto-edit-checkbox").checked;
         
-        if (request) {
-          setTimeout(() => {
-            editLogs(request.funcionario_email);
-          }, 500);
+        if (autoEdit) {
+          // Buscar detalhes da solicitação para obter o email do funcionário
+          const managerEmail = localStorage.getItem("employee_email");
+          const res = await axios.get(`http://localhost:8080/manager/requests?manager_email=${encodeURIComponent(managerEmail)}`);
+          const allRequests = [...res.data.pending, ...res.data.processed];
+          const request = allRequests.find(req => req.ID === currentRequestId);
+          
+          if (request) {
+            // Extrair valores sugeridos novamente
+            const suggestedValues = extractSuggestedValues(request.motivo);
+            
+            setTimeout(() => {
+              editLogs(request.funcionario_email, suggestedValues, request.data_solicitada);
+            }, 500);
+          }
         }
       }
 
@@ -285,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Torna a função editLogs global para ser acessível pelo HTML
-  window.editLogs = async function(email) {
+  window.editLogs = async function(email, suggestedValues = null, requestDate = null) {
     currentEmail = email;
     try {
       const res = await axios.get(`http://localhost:8080/time_logs?employee_email=${email}`);
@@ -293,16 +412,69 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!logsCache.length) return alert("Sem registros!");
 
-      const latest = logsCache[0]; // Mais recente
+      // Se foi especificada uma data, busca o registro dessa data
+      let targetLog = logsCache[0]; // Mais recente por padrão
+      if (requestDate) {
+        const requestDateStr = new Date(requestDate).toISOString().split('T')[0];
+        const foundLog = logsCache.find(log => {
+          const logDateStr = new Date(log.log_date).toISOString().split('T')[0];
+          return logDateStr === requestDateStr;
+        });
+        if (foundLog) {
+          targetLog = foundLog;
+        }
+      }
+
+      // Função para converter horário HH:MM para datetime-local
+      const timeToDatetime = (timeStr, baseDate) => {
+        if (!timeStr) return "";
+        const [hours, minutes] = timeStr.split(':');
+        const date = new Date(baseDate);
+        date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        return date.toISOString().slice(0, 16);
+      };
+
+      // Se há valores sugeridos, usa eles; senão usa os valores atuais
+      let entryValue = targetLog.entry_time;
+      let lunchExitValue = targetLog.lunch_exit_time;
+      let lunchReturnValue = targetLog.lunch_return_time;
+      let exitValue = targetLog.exit_time;
+      let prefilledReason = "";
+
+      if (suggestedValues && Object.keys(suggestedValues).length > 0) {
+        const baseDate = targetLog.log_date;
+        
+        if (suggestedValues.entry) {
+          entryValue = timeToDatetime(suggestedValues.entry, baseDate);
+        }
+        if (suggestedValues.lunchExit) {
+          lunchExitValue = timeToDatetime(suggestedValues.lunchExit, baseDate);
+        }
+        if (suggestedValues.lunchReturn) {
+          lunchReturnValue = timeToDatetime(suggestedValues.lunchReturn, baseDate);
+        }
+        if (suggestedValues.exit) {
+          exitValue = timeToDatetime(suggestedValues.exit, baseDate);
+        }
+        
+        prefilledReason = "Alteração aprovada conforme solicitação do funcionário com valores sugeridos.";
+      }
+
       editFields.innerHTML = `
-        ${formatInput("Entrada", latest.entry_time, "entry_time")}
-        ${formatInput("Saída Almoço", latest.lunch_exit_time, "lunch_exit_time")}
-        ${formatInput("Retorno Almoço", latest.lunch_return_time, "lunch_return_time")}
-        ${formatInput("Saída", latest.exit_time, "exit_time")}
+        <div class="col-12 mb-3">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> <strong>Editando registro de:</strong> ${new Date(targetLog.log_date).toLocaleDateString('pt-BR')}
+            ${suggestedValues ? '<br><small><i class="fas fa-lightbulb"></i> Valores sugeridos pelo funcionário foram pré-preenchidos</small>' : ''}
+          </div>
+        </div>
+        ${formatInput("Entrada", entryValue, "entry_time")}
+        ${formatInput("Saída Almoço", lunchExitValue, "lunch_exit_time")}
+        ${formatInput("Retorno Almoço", lunchReturnValue, "lunch_return_time")}
+        ${formatInput("Saída", exitValue, "exit_time")}
         <div class="col-12 mt-3">
           <label class="form-label"><strong>Motivo da Alteração *</strong></label>
           <textarea class="form-control" name="motivo_edicao" rows="3" required 
-                    placeholder="Descreva o motivo da alteração (obrigatório)..."></textarea>
+                    placeholder="Descreva o motivo da alteração (obrigatório)...">${prefilledReason}</textarea>
         </div>
       `;
       modal.show();
