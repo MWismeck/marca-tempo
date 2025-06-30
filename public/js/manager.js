@@ -3,8 +3,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const editFields = document.getElementById("edit-fields");
   const modal = new bootstrap.Modal(document.getElementById("editModal"));
   const exportModal = new bootstrap.Modal(document.getElementById("exportModal"));
+  const processModal = new bootstrap.Modal(document.getElementById("processRequestModal"));
+  
   let logsCache = [];
   let currentEmail = "";
+  let currentRequestId = null;
   const managerName = localStorage.getItem("employee_name");
 
   function formatInput(label, value, name) {
@@ -17,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
+  // Carregar funcionários da empresa
   async function fetchEmployees() {
     try {
       const managerEmail = localStorage.getItem("employee_email");
@@ -56,6 +60,227 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         employeeList.innerHTML = "<tr><td colspan='3' class='text-center text-danger'>Erro ao carregar funcionários da sua empresa.</td></tr>";
       }
+    }
+  }
+
+  // Carregar solicitações
+  async function loadRequests() {
+    try {
+      const managerEmail = localStorage.getItem("employee_email");
+      if (!managerEmail) {
+        alert("Sessão inválida. Faça login novamente.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      console.log("Carregando solicitações para gerente:", managerEmail);
+      const res = await axios.get(`http://localhost:8080/manager/requests?manager_email=${encodeURIComponent(managerEmail)}`);
+      
+      // Verificação de segurança para evitar erros
+      const responseData = res.data || {};
+      const pending = responseData.pending || [];
+      const processed = responseData.processed || [];
+      
+      console.log("Solicitações carregadas:", { pending: pending.length, processed: processed.length });
+
+      // Atualizar badges de notificação
+      updateNotificationBadges(pending.length, processed.length);
+
+      // Preencher tabela de pendentes
+      fillPendingTable(pending);
+
+      // Preencher tabela de histórico
+      fillHistoryTable(processed);
+
+    } catch (err) {
+      console.error("Erro ao carregar solicitações:", err);
+      document.getElementById("pending-requests-list").innerHTML = 
+        "<tr><td colspan='5' class='text-center text-danger'>Erro ao carregar solicitações.</td></tr>";
+      document.getElementById("history-requests-list").innerHTML = 
+        "<tr><td colspan='6' class='text-center text-danger'>Erro ao carregar histórico.</td></tr>";
+    }
+  }
+
+  // Atualizar badges de notificação
+  function updateNotificationBadges(pendingCount, processedCount) {
+    const pendingBadge = document.getElementById("pending-requests-badge");
+    const pendingCountSpan = document.getElementById("pending-count");
+    const pendingTabCount = document.getElementById("pending-tab-count");
+    const historyTabCount = document.getElementById("history-tab-count");
+
+    // Badge principal no cabeçalho
+    if (pendingCount > 0) {
+      pendingBadge.style.display = "inline";
+      pendingCountSpan.textContent = pendingCount;
+    } else {
+      pendingBadge.style.display = "none";
+    }
+
+    // Badges nas abas
+    pendingTabCount.textContent = pendingCount;
+    historyTabCount.textContent = processedCount;
+  }
+
+  // Preencher tabela de solicitações pendentes
+  function fillPendingTable(pending) {
+    const tbody = document.getElementById("pending-requests-list");
+    
+    // Verificação de segurança
+    if (!pending || !Array.isArray(pending)) {
+      tbody.innerHTML = "<tr><td colspan='5' class='text-center'>Nenhuma solicitação pendente.</td></tr>";
+      return;
+    }
+    
+    if (pending.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='5' class='text-center'>Nenhuma solicitação pendente.</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = pending.map(req => `
+      <tr>
+        <td>${req.funcionario_nome || req.funcionario_email}</td>
+        <td>${new Date(req.data_solicitada).toLocaleDateString('pt-BR')}</td>
+        <td class="text-truncate" style="max-width: 200px;" title="${req.motivo}">${req.motivo}</td>
+        <td>${new Date(req.CreatedAt).toLocaleDateString('pt-BR')} ${new Date(req.CreatedAt).toLocaleTimeString('pt-BR')}</td>
+        <td>
+          <button class="btn btn-sm btn-warning" onclick="processRequest(${req.ID})">
+            <i class="fas fa-cog"></i> Processar
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  // Preencher tabela de histórico
+  function fillHistoryTable(processed) {
+    const tbody = document.getElementById("history-requests-list");
+    
+    // Verificação de segurança
+    if (!processed || !Array.isArray(processed)) {
+      tbody.innerHTML = "<tr><td colspan='6' class='text-center'>Nenhuma solicitação processada.</td></tr>";
+      return;
+    }
+    
+    if (processed.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='6' class='text-center'>Nenhuma solicitação processada.</td></tr>";
+      return;
+    }
+
+    tbody.innerHTML = processed.map(req => {
+      const statusClass = req.status === 'aprovado' ? 'text-success' : 'text-danger';
+      const statusIcon = req.status === 'aprovado' ? 'fa-check' : 'fa-times';
+      
+      return `
+        <tr>
+          <td>${req.funcionario_nome || req.funcionario_email}</td>
+          <td>${new Date(req.data_solicitada).toLocaleDateString('pt-BR')}</td>
+          <td class="${statusClass}">
+            <i class="fas ${statusIcon}"></i> ${req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+          </td>
+          <td>${req.gerente_email || 'N/A'}</td>
+          <td class="text-truncate" style="max-width: 200px;" title="${req.comentario_gerente || ''}">${req.comentario_gerente || 'Sem comentário'}</td>
+          <td>${req.processado_em ? new Date(req.processado_em).toLocaleDateString('pt-BR') + ' ' + new Date(req.processado_em).toLocaleTimeString('pt-BR') : 'N/A'}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // Processar solicitação (aprovar/rejeitar)
+  window.processRequest = async function(requestId) {
+    try {
+      currentRequestId = requestId;
+      
+      // Buscar detalhes da solicitação
+      const managerEmail = localStorage.getItem("employee_email");
+      const res = await axios.get(`http://localhost:8080/manager/requests?manager_email=${encodeURIComponent(managerEmail)}`);
+      const { pending } = res.data;
+      
+      const request = pending.find(req => req.ID === requestId);
+      if (!request) {
+        alert("Solicitação não encontrada.");
+        return;
+      }
+
+      // Preencher detalhes no modal
+      document.getElementById("request-details").innerHTML = `
+        <div class="card bg-light">
+          <div class="card-body">
+            <h6 class="card-title">Detalhes da Solicitação</h6>
+            <p><strong>Funcionário:</strong> ${request.funcionario_nome || request.funcionario_email}</p>
+            <p><strong>Data Solicitada:</strong> ${new Date(request.data_solicitada).toLocaleDateString('pt-BR')}</p>
+            <p><strong>Motivo:</strong> ${request.motivo}</p>
+            <p><strong>Solicitado em:</strong> ${new Date(request.CreatedAt).toLocaleDateString('pt-BR')} às ${new Date(request.CreatedAt).toLocaleTimeString('pt-BR')}</p>
+          </div>
+        </div>
+      `;
+
+      // Limpar comentário anterior
+      document.querySelector('textarea[name="comentario"]').value = "";
+
+      processModal.show();
+    } catch (err) {
+      console.error("Erro ao carregar detalhes da solicitação:", err);
+      alert("Erro ao carregar detalhes da solicitação.");
+    }
+  };
+
+  // Aprovar solicitação
+  document.getElementById("approve-btn").addEventListener("click", async () => {
+    await updateRequestStatus("aprovado");
+  });
+
+  // Rejeitar solicitação
+  document.getElementById("reject-btn").addEventListener("click", async () => {
+    await updateRequestStatus("rejeitado");
+  });
+
+  // Atualizar status da solicitação
+  async function updateRequestStatus(status) {
+    const comentario = document.querySelector('textarea[name="comentario"]').value.trim();
+    
+    if (!comentario || comentario.length < 5) {
+      alert("O comentário é obrigatório e deve ter pelo menos 5 caracteres.");
+      return;
+    }
+
+    try {
+      const managerEmail = localStorage.getItem("employee_email");
+      
+      const body = {
+        status: status,
+        comentario_gerente: comentario,
+        gerente_email: managerEmail
+      };
+
+      console.log("Processando solicitação:", { requestId: currentRequestId, body });
+
+      await axios.put(`http://localhost:8080/manager/requests/${currentRequestId}/status`, body);
+      
+      alert(`Solicitação ${status} com sucesso!`);
+      processModal.hide();
+      
+      // Recarregar solicitações
+      await loadRequests();
+
+      // Se aprovado, abrir modal de edição automaticamente
+      if (status === "aprovado") {
+        // Buscar detalhes da solicitação para obter o email do funcionário
+        const managerEmail = localStorage.getItem("employee_email");
+        const res = await axios.get(`http://localhost:8080/manager/requests?manager_email=${encodeURIComponent(managerEmail)}`);
+        const allRequests = [...res.data.pending, ...res.data.processed];
+        const request = allRequests.find(req => req.ID === currentRequestId);
+        
+        if (request) {
+          setTimeout(() => {
+            editLogs(request.funcionario_email);
+          }, 500);
+        }
+      }
+
+    } catch (err) {
+      console.error("Erro ao processar solicitação:", err);
+      const errorMsg = err.response?.data?.error || "Erro ao processar solicitação.";
+      alert(errorMsg);
     }
   }
 
@@ -165,6 +390,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Carrega funcionários ao inicializar
+  // Atualização automática das solicitações a cada 30 segundos
+  setInterval(loadRequests, 30000);
+
+  // Carrega dados ao inicializar
   fetchEmployees();
+  loadRequests();
 });

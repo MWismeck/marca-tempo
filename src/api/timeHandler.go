@@ -397,17 +397,28 @@ func (api *API) editTimeLogByManager(c echo.Context) error {
 	}
 
 	var updateData struct {
-		EntryTime       time.Time `json:"entry_time"`
-		LunchExitTime   time.Time `json:"lunch_exit_time"`
-		LunchReturnTime time.Time `json:"lunch_return_time"`
-		ExitTime        time.Time `json:"exit_time"`
-		MotivoEdicao    string    `json:"motivo_edicao"`
-		ManagerEmail    string    `json:"manager_email"`
+		EntryTime       string `json:"entry_time"`
+		LunchExitTime   string `json:"lunch_exit_time"`
+		LunchReturnTime string `json:"lunch_return_time"`
+		ExitTime        string `json:"exit_time"`
+		MotivoEdicao    string `json:"motivo_edicao"`
+		ManagerEmail    string `json:"manager_email"`
 	}
 
 	if err := c.Bind(&updateData); err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao fazer bind dos dados de edição")
 		return c.JSON(http.StatusBadRequest, "Dados inválidos")
 	}
+
+	log.Info().
+		Int("timeLogId", id).
+		Str("entryTime", updateData.EntryTime).
+		Str("lunchExitTime", updateData.LunchExitTime).
+		Str("lunchReturnTime", updateData.LunchReturnTime).
+		Str("exitTime", updateData.ExitTime).
+		Str("motivo", updateData.MotivoEdicao).
+		Str("managerEmail", updateData.ManagerEmail).
+		Msg("[api] Dados recebidos para edição")
 
 	// VALIDAÇÃO: Motivo obrigatório
 	if updateData.MotivoEdicao == "" {
@@ -445,18 +456,61 @@ func (api *API) editTimeLogByManager(c echo.Context) error {
 		return c.JSON(http.StatusForbidden, "Você só pode editar funcionários da sua empresa")
 	}
 
+	// Função auxiliar para converter string para time.Time
+	parseDateTime := func(dateTimeStr string) (time.Time, error) {
+		if dateTimeStr == "" {
+			return time.Time{}, nil
+		}
+		// Tenta diferentes formatos
+		formats := []string{
+			"2006-01-02T15:04",
+			"2006-01-02T15:04:05",
+			time.RFC3339,
+		}
+		
+		for _, format := range formats {
+			if t, err := time.Parse(format, dateTimeStr); err == nil {
+				return t, nil
+			}
+		}
+		return time.Time{}, fmt.Errorf("formato de data/hora inválido: %s", dateTimeStr)
+	}
+
 	// Atualiza apenas os campos enviados
-	if !updateData.EntryTime.IsZero() {
-		timeLog.EntryTime = updateData.EntryTime
+	if updateData.EntryTime != "" {
+		if parsedTime, err := parseDateTime(updateData.EntryTime); err != nil {
+			log.Error().Err(err).Str("entryTime", updateData.EntryTime).Msg("[api] Erro ao converter EntryTime")
+			return c.JSON(http.StatusBadRequest, "Formato de data/hora inválido para EntryTime")
+		} else {
+			timeLog.EntryTime = parsedTime
+		}
 	}
-	if !updateData.LunchExitTime.IsZero() {
-		timeLog.LunchExitTime = updateData.LunchExitTime
+	
+	if updateData.LunchExitTime != "" {
+		if parsedTime, err := parseDateTime(updateData.LunchExitTime); err != nil {
+			log.Error().Err(err).Str("lunchExitTime", updateData.LunchExitTime).Msg("[api] Erro ao converter LunchExitTime")
+			return c.JSON(http.StatusBadRequest, "Formato de data/hora inválido para LunchExitTime")
+		} else {
+			timeLog.LunchExitTime = parsedTime
+		}
 	}
-	if !updateData.LunchReturnTime.IsZero() {
-		timeLog.LunchReturnTime = updateData.LunchReturnTime
+	
+	if updateData.LunchReturnTime != "" {
+		if parsedTime, err := parseDateTime(updateData.LunchReturnTime); err != nil {
+			log.Error().Err(err).Str("lunchReturnTime", updateData.LunchReturnTime).Msg("[api] Erro ao converter LunchReturnTime")
+			return c.JSON(http.StatusBadRequest, "Formato de data/hora inválido para LunchReturnTime")
+		} else {
+			timeLog.LunchReturnTime = parsedTime
+		}
 	}
-	if !updateData.ExitTime.IsZero() {
-		timeLog.ExitTime = updateData.ExitTime
+	
+	if updateData.ExitTime != "" {
+		if parsedTime, err := parseDateTime(updateData.ExitTime); err != nil {
+			log.Error().Err(err).Str("exitTime", updateData.ExitTime).Msg("[api] Erro ao converter ExitTime")
+			return c.JSON(http.StatusBadRequest, "Formato de data/hora inválido para ExitTime")
+		} else {
+			timeLog.ExitTime = parsedTime
+		}
 	}
 
 	// Salvar motivo e dados da edição
@@ -482,18 +536,46 @@ func (api *API) editTimeLogByManager(c echo.Context) error {
 func (api *API) requestTimeEdit(c echo.Context) error {
 	var req schemas.PontoSolicitacao
 	if err := c.Bind(&req); err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao fazer bind da solicitação")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
 	}
 
 	if req.FuncionarioEmail == "" || req.Motivo == "" {
+		log.Error().
+			Str("funcionario_email", req.FuncionarioEmail).
+			Str("motivo", req.Motivo).
+			Msg("[api] Dados obrigatórios faltando")
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email e motivo são obrigatórios"})
 	}
 
+	// Garantir que o status seja "pendente" se não foi definido
+	if req.Status == "" {
+		req.Status = "pendente"
+	}
+
+	log.Info().
+		Str("funcionario_email", req.FuncionarioEmail).
+		Str("motivo", req.Motivo).
+		Time("data_solicitada", req.DataSolicitada).
+		Str("status", req.Status).
+		Msg("[api] Criando nova solicitação")
+
 	if err := api.DB.DB.Create(&req).Error; err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao salvar solicitação no banco")
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao salvar solicitação"})
 	}
 
-	return c.JSON(http.StatusCreated, map[string]string{"message": "Solicitação registrada com sucesso"})
+	log.Info().
+		Uint("solicitacao_id", req.ID).
+		Str("funcionario_email", req.FuncionarioEmail).
+		Str("status", req.Status).
+		Msg("[api] Solicitação salva com sucesso")
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"message": "Solicitação registrada com sucesso",
+		"id": req.ID,
+		"status": req.Status,
+	})
 }
 
 func (api *API) exportTimeLogsRange(c echo.Context) error {
@@ -567,4 +649,233 @@ func (api *API) exportTimeLogsRange(c echo.Context) error {
 	c.Response().Header().Set("Content-Disposition", "attachment; filename="+filename)
 	c.Response().Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	return c.Blob(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buf.Bytes())
+}
+
+func (api *API) getManagerRequests(c echo.Context) error {
+	managerEmail := c.QueryParam("manager_email")
+	if managerEmail == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email do gerente é obrigatório"})
+	}
+
+	log.Info().
+		Str("managerEmail", managerEmail).
+		Msg("[api] Iniciando busca de solicitações para gerente")
+
+	// Buscar empresa do gerente
+	var manager schemas.Employee
+	if err := api.DB.DB.Where("email = ? AND is_manager = ?", managerEmail, true).First(&manager).Error; err != nil {
+		log.Error().Err(err).Msgf("[api] Gerente não encontrado: %s", managerEmail)
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Gerente não encontrado"})
+	}
+
+	log.Info().
+		Str("managerEmail", managerEmail).
+		Str("managerName", manager.Name).
+		Str("companyCNPJ", manager.CompanyCNPJ).
+		Bool("isManager", manager.IsManager).
+		Msg("[api] Gerente encontrado")
+
+	// Buscar funcionários da mesma empresa
+	var employeeEmails []string
+	if err := api.DB.DB.Model(&schemas.Employee{}).
+		Where("company_cnpj = ?", manager.CompanyCNPJ).
+		Pluck("email", &employeeEmails).Error; err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao buscar funcionários da empresa")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar funcionários"})
+	}
+
+	log.Info().
+		Str("companyCNPJ", manager.CompanyCNPJ).
+		Int("employeeCount", len(employeeEmails)).
+		Strs("employeeEmails", employeeEmails).
+		Msg("[api] Funcionários da empresa encontrados")
+
+	if len(employeeEmails) == 0 {
+		log.Warn().
+			Str("managerEmail", managerEmail).
+			Str("companyCNPJ", manager.CompanyCNPJ).
+			Msg("[api] Nenhum funcionário encontrado na empresa")
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"pending":   []schemas.PontoSolicitacao{},
+			"processed": []schemas.PontoSolicitacao{},
+		})
+	}
+
+	// Buscar solicitações dos funcionários da empresa
+	var allRequests []schemas.PontoSolicitacao
+	if err := api.DB.DB.Where("funcionario_email IN ?", employeeEmails).
+		Order("created_at DESC").
+		Find(&allRequests).Error; err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao buscar solicitações")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao buscar solicitações"})
+	}
+
+	log.Info().
+		Int("totalRequests", len(allRequests)).
+		Msg("[api] Total de solicitações encontradas")
+
+	// Log detalhado de cada solicitação
+	for i, req := range allRequests {
+		log.Info().
+			Int("index", i).
+			Uint("requestId", req.ID).
+			Str("funcionarioEmail", req.FuncionarioEmail).
+			Str("status", req.Status).
+			Str("motivo", req.Motivo).
+			Time("createdAt", req.CreatedAt).
+			Msg("[api] Solicitação encontrada")
+	}
+
+	// Separar solicitações pendentes e processadas
+	var pending []schemas.PontoSolicitacao
+	var processed []schemas.PontoSolicitacao
+
+	for _, req := range allRequests {
+		if req.Status == "pendente" {
+			pending = append(pending, req)
+		} else {
+			processed = append(processed, req)
+		}
+	}
+
+	log.Info().
+		Int("pendingCount", len(pending)).
+		Int("processedCount", len(processed)).
+		Msg("[api] Solicitações separadas por status")
+
+	// Buscar nomes dos funcionários para enriquecer os dados
+	type RequestWithEmployeeName struct {
+		schemas.PontoSolicitacao
+		FuncionarioNome string `json:"funcionario_nome"`
+	}
+
+	var pendingWithNames []RequestWithEmployeeName
+	var processedWithNames []RequestWithEmployeeName
+
+	for _, req := range pending {
+		var employee schemas.Employee
+		if err := api.DB.DB.Where("email = ?", req.FuncionarioEmail).First(&employee).Error; err == nil {
+			pendingWithNames = append(pendingWithNames, RequestWithEmployeeName{
+				PontoSolicitacao: req,
+				FuncionarioNome:  employee.Name,
+			})
+			log.Info().
+				Uint("requestId", req.ID).
+				Str("funcionarioEmail", req.FuncionarioEmail).
+				Str("funcionarioNome", employee.Name).
+				Msg("[api] Nome do funcionário adicionado à solicitação pendente")
+		} else {
+			log.Error().Err(err).
+				Uint("requestId", req.ID).
+				Str("funcionarioEmail", req.FuncionarioEmail).
+				Msg("[api] Erro ao buscar nome do funcionário para solicitação pendente")
+		}
+	}
+
+	for _, req := range processed {
+		var employee schemas.Employee
+		if err := api.DB.DB.Where("email = ?", req.FuncionarioEmail).First(&employee).Error; err == nil {
+			processedWithNames = append(processedWithNames, RequestWithEmployeeName{
+				PontoSolicitacao: req,
+				FuncionarioNome:  employee.Name,
+			})
+		}
+	}
+
+	log.Info().
+		Str("managerEmail", managerEmail).
+		Int("finalPendingCount", len(pendingWithNames)).
+		Int("finalProcessedCount", len(processedWithNames)).
+		Msg("[api] Solicitações finais carregadas para gerente")
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"pending":   pendingWithNames,
+		"processed": processedWithNames,
+	})
+}
+
+func (api *API) updateRequestStatus(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID inválido"})
+	}
+
+	var updateData struct {
+		Status            string `json:"status"`
+		ComentarioGerente string `json:"comentario_gerente"`
+		GerenteEmail      string `json:"gerente_email"`
+	}
+
+	if err := c.Bind(&updateData); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Dados inválidos"})
+	}
+
+	// Validações
+	if updateData.Status != "aprovado" && updateData.Status != "rejeitado" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Status deve ser 'aprovado' ou 'rejeitado'"})
+	}
+
+	if updateData.GerenteEmail == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email do gerente é obrigatório"})
+	}
+
+	if updateData.ComentarioGerente == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Comentário do gerente é obrigatório"})
+	}
+
+	// Buscar a solicitação
+	var request schemas.PontoSolicitacao
+	if err := api.DB.DB.First(&request, id).Error; err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Solicitação não encontrada"})
+	}
+
+	// Verificar se ainda está pendente
+	if request.Status != "pendente" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Solicitação já foi processada"})
+	}
+
+	// Verificar se o gerente pode processar (mesma empresa)
+	var manager schemas.Employee
+	if err := api.DB.DB.Where("email = ? AND is_manager = ?", updateData.GerenteEmail, true).First(&manager).Error; err != nil {
+		log.Error().Err(err).Msgf("[api] Gerente não encontrado: %s", updateData.GerenteEmail)
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Gerente não encontrado"})
+	}
+
+	var employee schemas.Employee
+	if err := api.DB.DB.Where("email = ?", request.FuncionarioEmail).First(&employee).Error; err != nil {
+		log.Error().Err(err).Msgf("[api] Funcionário não encontrado: %s", request.FuncionarioEmail)
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Funcionário não encontrado"})
+	}
+
+	if manager.CompanyCNPJ != employee.CompanyCNPJ {
+		log.Warn().
+			Str("manager_cnpj", manager.CompanyCNPJ).
+			Str("employee_cnpj", employee.CompanyCNPJ).
+			Msg("[api] Tentativa de processar solicitação entre empresas diferentes")
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "Você só pode processar solicitações de funcionários da sua empresa"})
+	}
+
+	// Atualizar a solicitação
+	request.Status = updateData.Status
+	request.ComentarioGerente = updateData.ComentarioGerente
+	request.GerenteEmail = updateData.GerenteEmail
+	request.ProcessadoEm = time.Now()
+
+	if err := api.DB.DB.Save(&request).Error; err != nil {
+		log.Error().Err(err).Msg("[api] Erro ao salvar solicitação processada")
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Erro ao processar solicitação"})
+	}
+
+	log.Info().
+		Int("requestId", id).
+		Str("status", updateData.Status).
+		Str("managerEmail", updateData.GerenteEmail).
+		Str("employeeEmail", request.FuncionarioEmail).
+		Str("comentario", updateData.ComentarioGerente).
+		Msg("[api] Solicitação processada pelo gerente")
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message": "Solicitação processada com sucesso",
+		"request": request,
+	})
 }

@@ -207,6 +207,8 @@ func (api *API) ConfigureRoutes() {
 	api.Echo.PUT("/time_logs/:id/manual_edit", api.editTimeLogByManager)
 	api.Echo.POST("/employee/request_change", api.requestTimeEdit)
 	api.Echo.GET("/time_logs/export_range", api.exportTimeLogsRange)
+	api.Echo.GET("/manager/requests", api.getManagerRequests)
+	api.Echo.PUT("/manager/requests/:id/status", api.updateRequestStatus)
 
 	api.Echo.GET("/time-registration.html", func(c echo.Context) error {
 		return c.File("public/time-registration.html")

@@ -27,10 +27,13 @@ type Employee struct {
 
 type PontoSolicitacao struct {
 	gorm.Model
-	FuncionarioEmail string    `json:"funcionario_email" gorm:"type:varchar(255);not null"`
-	DataSolicitada   time.Time `json:"data_solicitada"`
-	Motivo           string    `json:"motivo" gorm:"type:text"`
-	Status           string    `json:"status" gorm:"default:'pendente'"` // pendente, aprovado, rejeitado
+	FuncionarioEmail  string    `json:"funcionario_email" gorm:"type:varchar(255);not null"`
+	DataSolicitada    time.Time `json:"data_solicitada"`
+	Motivo            string    `json:"motivo" gorm:"type:text"`
+	Status            string    `json:"status" gorm:"default:'pendente'"` // pendente, aprovado, rejeitado
+	GerenteEmail      string    `json:"gerente_email" gorm:"type:varchar(255)"`
+	ComentarioGerente string    `json:"comentario_gerente" gorm:"type:text"`
+	ProcessadoEm      time.Time `json:"processado_em"`
 }
 
 type Company struct {
